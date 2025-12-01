@@ -1,18 +1,32 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Coffee, Zap } from "lucide-react";
+import { Loader2, Coffee, Zap, CheckCircle2, Sparkles } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
+import { createJob } from "@/app/actions/create-job";
 
-export function SmartPricingForm() {
+interface SmartPricingFormProps {
+  onSuccess?: () => void;
+}
+
+export function SmartPricingForm({ onSuccess }: SmartPricingFormProps) {
   const [description, setDescription] = useState("");
   const [urgency, setUrgency] = useState([2]); // 0-4 scale (Chill to ASAP)
   const [isThinking, setIsThinking] = useState(false);
   const [showPrice, setShowPrice] = useState(false);
   const [calculatedPrice, setCalculatedPrice] = useState(0);
+  const [isPending, startTransition] = useTransition();
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Map urgency slider value to text
+  const getUrgencyText = (value: number) => {
+    const urgencyMap = ["Flexible", "This week", "3 days", "Today", "ASAP"];
+    return urgencyMap[value] || "Flexible";
+  };
 
   // Helper function to calculate price
   const calculatePrice = (text: string, urgencyValue: number) => {
@@ -52,7 +66,7 @@ export function SmartPricingForm() {
   }, [urgency, description, showPrice]);
 
   return (
-    <div className="bg-white dark:bg-zinc-950 border-0 dark:border dark:border-zinc-800 min-h-[550px] max-h-[100dvh] sm:max-h-none flex flex-col shadow-xl overflow-hidden">
+    <div className="relative bg-white dark:bg-zinc-950 border-0 dark:border dark:border-zinc-800 min-h-[550px] max-h-[100dvh] sm:max-h-none flex flex-col shadow-xl overflow-hidden">
       {/* Header */}
       <div className="px-6 sm:px-8 pt-6 sm:pt-8 pb-2">
         <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Create a Task</h2>
@@ -155,13 +169,146 @@ export function SmartPricingForm() {
                 {/* Submit Button */}
                 <Button
                   size="lg"
+                  disabled={isPending}
+                  onClick={() => {
+                    setError(null);
+                    startTransition(async () => {
+                      const formData = new FormData();
+                      formData.append("title", description.slice(0, 100)); // Use first 100 chars as title
+                      formData.append("description", description);
+                      formData.append("price", calculatedPrice.toString());
+                      formData.append("urgency", getUrgencyText(urgency[0]));
+                      formData.append("location", "Campus");
+
+                      const result = await createJob(formData);
+
+                      if (result.success) {
+                        setShowSuccess(true);
+                        setDescription("");
+                        setShowPrice(false);
+                        // Auto close after 2.5 seconds
+                        setTimeout(() => {
+                          setShowSuccess(false);
+                          onSuccess?.();
+                        }, 2500);
+                      } else if (result.error) {
+                        setError(result.error);
+                      }
+                    });
+                  }}
                   className="relative w-full h-14 rounded-2xl text-lg font-bold tracking-tight transition-all duration-300 overflow-hidden
                     bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/25
                     dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100 dark:shadow-white/10
+                    disabled:opacity-50 disabled:cursor-not-allowed
                   "
                 >
-                  Post for Rs. {calculatedPrice.toLocaleString()}
+                  {isPending ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Posting...
+                    </span>
+                  ) : (
+                    `Post for Rs. ${calculatedPrice.toLocaleString()}`
+                  )}
                 </Button>
+
+                {/* Error Message */}
+                <AnimatePresence>
+                  {error && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      className="text-center text-sm text-red-500 dark:text-red-400 mt-3"
+                    >
+                      {error}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Success State - Premium Notification */}
+        <AnimatePresence>
+          {showSuccess && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              className="absolute inset-0 flex items-center justify-center bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl z-50"
+            >
+              <div className="text-center space-y-6 px-8">
+                {/* Animated Success Icon */}
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 15, delay: 0.1 }}
+                  className="relative mx-auto"
+                >
+                  {/* Glow Ring */}
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1.5, opacity: 0 }}
+                    transition={{ duration: 1, repeat: Infinity, repeatDelay: 0.5 }}
+                    className="absolute inset-0 w-24 h-24 mx-auto rounded-full bg-emerald-500/30"
+                  />
+                  <div className="relative w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-2xl shadow-emerald-500/40">
+                    <motion.div
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.2 }}
+                    >
+                      <CheckCircle2 className="w-12 h-12 text-white" strokeWidth={2.5} />
+                    </motion.div>
+                  </div>
+                </motion.div>
+
+                {/* Text */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="space-y-2"
+                >
+                  <h3 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+                    Task Posted! 🎉
+                  </h3>
+                  <p className="text-zinc-500 dark:text-zinc-400 text-sm">
+                    Your task is now live. Helpers will reach out soon!
+                  </p>
+                </motion.div>
+
+                {/* Sparkle particles */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="flex items-center justify-center gap-1"
+                >
+                  {[...Array(5)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ y: 0, opacity: 0.5 }}
+                      animate={{ y: [-5, 5, -5], opacity: [0.5, 1, 0.5] }}
+                      transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.1 }}
+                    >
+                      <Sparkles className="w-4 h-4 text-emerald-500" />
+                    </motion.div>
+                  ))}
+                </motion.div>
+
+                {/* Progress bar */}
+                <motion.div className="w-48 mx-auto h-1 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: "0%" }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 2.5, ease: "linear" }}
+                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full"
+                  />
+                </motion.div>
               </div>
             </motion.div>
           )}
