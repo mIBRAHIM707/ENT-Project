@@ -116,7 +116,10 @@
   * {
     @apply border-border outline-ring/50;
   }
+  :root {
+    --radius: 1rem; /* rounded-2xl */
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply antialiased selection:bg-emerald-500/30 selection:text-emerald-900;
   }
 }

@@ -13,65 +13,93 @@ import {
 } from "@/components/ui/dialog";
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 
-// Bento Category Data
+// Bento Category Data - Vibrant colors like Spotify
 const categories = [
   {
     title: "Food Delivery",
+    description: "Get meals delivered to your hostel",
     emoji: "🍔",
     icon: Utensils,
-    bg: "bg-gradient-to-br from-orange-100 to-amber-50",
     span: "col-span-2 row-span-2",
-    textColor: "text-orange-900",
+    iconColor: "text-orange-500",
+    iconBg: "bg-orange-500/20",
+    cardBg: "bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/40 dark:to-amber-950/40",
+    borderColor: "border-orange-200/50 dark:border-orange-800/30",
+    hoverBorder: "hover:border-orange-400/50",
   },
   {
     title: "Assignments",
+    description: "Academic help when you need it",
     emoji: "📚",
     icon: BookOpen,
-    bg: "bg-gradient-to-br from-blue-100 to-sky-50",
     span: "col-span-2 row-span-1",
-    textColor: "text-blue-900",
+    iconColor: "text-blue-500",
+    iconBg: "bg-blue-500/20",
+    cardBg: "bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40",
+    borderColor: "border-blue-200/50 dark:border-blue-800/30",
+    hoverBorder: "hover:border-blue-400/50",
   },
   {
     title: "Tech Support",
+    description: "Fix your devices",
     emoji: "💻",
     icon: Laptop,
-    bg: "bg-gradient-to-br from-zinc-100 to-slate-50",
     span: "col-span-1 row-span-1",
-    textColor: "text-zinc-900",
+    iconColor: "text-purple-500",
+    iconBg: "bg-purple-500/20",
+    cardBg: "bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/40 dark:to-violet-950/40",
+    borderColor: "border-purple-200/50 dark:border-purple-800/30",
+    hoverBorder: "hover:border-purple-400/50",
   },
   {
     title: "Ride Share",
+    description: "Split travel costs",
     emoji: "🚗",
     icon: Car,
-    bg: "bg-gradient-to-br from-emerald-100 to-green-50",
     span: "col-span-1 row-span-1",
-    textColor: "text-emerald-900",
+    iconColor: "text-emerald-500",
+    iconBg: "bg-emerald-500/20",
+    cardBg: "bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40",
+    borderColor: "border-emerald-200/50 dark:border-emerald-800/30",
+    hoverBorder: "hover:border-emerald-400/50",
   },
 ];
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-50/50 via-white to-white">
+    <div className="relative min-h-screen">
+      {/* Fixed Grid Background - Apple Style */}
+      <div className="fixed inset-0 -z-10 h-full w-full bg-white dark:bg-black">
+        <div className="absolute bottom-0 left-0 right-0 top-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
+      </div>
+
+      {/* Hero Glow Orb */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[400px] bg-emerald-500/20 blur-[120px] rounded-full -z-10" />
+
+      {/* Secondary Glow Orbs for depth */}
+      <div className="absolute top-[600px] left-0 w-[600px] h-[400px] bg-blue-500/10 blur-[120px] rounded-full -z-10" />
+      <div className="absolute top-[400px] right-0 w-[500px] h-[300px] bg-purple-500/10 blur-[120px] rounded-full -z-10" />
+
       {/* Minimalist Header */}
-      <header className="sticky top-0 z-50 bg-white/60 backdrop-blur-xl border-b border-zinc-200/50">
+      <header className="sticky top-0 z-50 bg-white/60 dark:bg-black/50 backdrop-blur-xl border-b border-zinc-200/30 dark:border-zinc-800/30">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold tracking-tighter text-zinc-900">
+          <h1 className="text-xl font-bold tracking-tighter text-zinc-900 dark:text-zinc-100">
             TaskVibe
           </h1>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" className="text-zinc-600 font-medium">
+            <Button variant="ghost" className="text-zinc-600 dark:text-zinc-400 font-medium hover:text-zinc-900 dark:hover:text-white">
               Login
             </Button>
             <Dialog>
               <DialogTrigger asChild>
                 <Button
                   size="icon"
-                  className="rounded-full h-9 w-9 bg-zinc-900 hover:bg-zinc-800 shadow-lg shadow-zinc-900/20"
+                  className="rounded-full h-9 w-9 bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 shadow-lg shadow-zinc-900/20 dark:shadow-white/10"
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-4 w-4 text-white dark:text-zinc-900" />
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden rounded-3xl border-0">
+              <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
                 <VisuallyHidden.Root>
                   <DialogTitle>Create a Task</DialogTitle>
                 </VisuallyHidden.Root>
@@ -83,27 +111,30 @@ export default function Home() {
       </header>
 
       {/* Hero Section */}
-      <section className="pt-24 pb-16 px-6">
+      <section className="relative pt-24 pb-16 px-6">
         <div className="max-w-4xl mx-auto text-center">
-          {/* Massive Typography */}
+          {/* Massive Typography - Maximum Contrast */}
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="text-5xl sm:text-6xl md:text-7xl font-semibold tracking-tighter text-zinc-900 leading-[1.1]"
+            className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tighter text-zinc-900 dark:text-zinc-100 leading-[1.1]"
           >
-            Get campus life sorted.
+            Get campus life{" "}
+            <span className="bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">
+              sorted.
+            </span>
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-lg sm:text-xl text-zinc-500 mt-6 tracking-tight"
+            className="text-lg sm:text-xl text-zinc-600 dark:text-zinc-400 mt-6 tracking-tight max-w-xl mx-auto"
           >
-            The marketplace for Topi.
+            The student marketplace for GIKI. Post tasks, find help, earn money.
           </motion.p>
 
-          {/* Spotlight Search Bar */}
+          {/* Premium Glass Search Bar */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -113,15 +144,17 @@ export default function Home() {
             <Dialog>
               <DialogTrigger asChild>
                 <button className="w-full group">
-                  <div className="flex items-center gap-4 px-6 py-5 bg-white rounded-2xl border border-zinc-200 shadow-lg shadow-zinc-200/50 hover:shadow-xl hover:shadow-zinc-200/50 hover:border-zinc-300 transition-all duration-300">
-                    <Search className="h-5 w-5 text-zinc-400" />
-                    <span className="text-lg text-zinc-400 font-light tracking-tight">
+                  <div className="flex items-center gap-4 px-6 py-5 backdrop-blur-2xl bg-white/60 dark:bg-zinc-900/60 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-lg shadow-zinc-900/5 dark:shadow-black/20 hover:shadow-xl hover:shadow-emerald-500/10 hover:border-emerald-500/50 transition-all duration-300">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 group-hover:bg-emerald-500/10 transition-colors">
+                      <Search className="h-5 w-5 text-zinc-500 dark:text-zinc-400 group-hover:text-emerald-500 transition-colors" />
+                    </div>
+                    <span className="text-lg text-zinc-500 dark:text-zinc-400 font-light tracking-tight">
                       What do you need done today?
                     </span>
                   </div>
                 </button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden rounded-3xl border-0">
+              <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
                 <VisuallyHidden.Root>
                   <DialogTitle>Create a Task</DialogTitle>
                 </VisuallyHidden.Root>
@@ -132,19 +165,19 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Bento Categories Section */}
+      {/* Bento Categories Section - Spotify/Apple Inspired */}
       <section className="px-6 py-12">
         <div className="max-w-6xl mx-auto">
           <motion.h3
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            className="text-sm font-semibold text-zinc-400 uppercase tracking-widest mb-6"
+            className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-widest mb-6"
           >
             Explore
           </motion.h3>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 auto-rows-[140px]">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 auto-rows-[160px]">
             {categories.map((category, index) => (
               <motion.div
                 key={category.title}
@@ -153,24 +186,36 @@ export default function Home() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: index * 0.1 }}
                 whileHover={{ scale: 1.02, y: -4 }}
-                className={`${category.span} ${category.bg} rounded-3xl p-6 cursor-pointer transition-shadow duration-300 hover:shadow-xl relative overflow-hidden group`}
+                className={`${category.span} relative rounded-3xl p-6 cursor-pointer overflow-hidden group
+                  ${category.cardBg}
+                  border ${category.borderColor}
+                  ${category.hoverBorder}
+                  hover:shadow-xl hover:shadow-black/5 dark:hover:shadow-black/20
+                  transition-all duration-30 ease-out
+                `}
               >
                 {/* Large Emoji Background */}
-                <span className="absolute -bottom-4 -right-4 text-8xl opacity-20 group-hover:opacity-30 transition-opacity">
+                <span className="absolute -bottom-4 -right-4 text-[100px] opacity-20 dark:opacity-10 group-hover:opacity-30 dark:group-hover:opacity-20 transition-opacity select-none pointer-events-none">
                   {category.emoji}
                 </span>
 
                 {/* Content */}
-                <div className="relative z-10">
-                  <category.icon
-                    className={`h-6 w-6 ${category.textColor} opacity-80 mb-3`}
-                    strokeWidth={1.5}
-                  />
-                  <h4
-                    className={`font-semibold tracking-tight ${category.textColor}`}
-                  >
+                <div className="relative z-10 h-full flex flex-col">
+                  {/* Icon with colored background */}
+                  <div className={`w-11 h-11 rounded-xl ${category.iconBg} backdrop-blur-sm flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-150`}>
+                    <category.icon
+                      className={`h-5 w-5 ${category.iconColor}`}
+                      strokeWidth={2}
+                    />
+                  </div>
+                  <h4 className="font-bold tracking-tight text-zinc-900 dark:text-white text-lg">
                     {category.title}
                   </h4>
+                  {category.description && (
+                    <p className="text-sm text-zinc-600 dark:text-zinc-300 mt-1">
+                      {category.description}
+                    </p>
+                  )}
                 </div>
               </motion.div>
             ))}
@@ -188,11 +233,11 @@ export default function Home() {
             viewport={{ once: true }}
             className="flex items-center gap-3 mb-8"
           >
-            <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
             </span>
-            <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-widest">
+            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-widest">
               Happening Now
             </h3>
           </motion.div>
