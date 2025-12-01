@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Sparkles, Zap } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Loader2, Coffee, Zap } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
@@ -15,10 +14,19 @@ export function SmartPricingForm() {
   const [showPrice, setShowPrice] = useState(false);
   const [calculatedPrice, setCalculatedPrice] = useState(0);
 
-  // Debounced price calculation
+  // Helper function to calculate price
+  const calculatePrice = (text: string, urgencyValue: number) => {
+    const basePrice = 300;
+    const textBonus = text.length * 2;
+    const urgencyBonus = urgencyValue * 100;
+    return basePrice + textBonus + urgencyBonus;
+  };
+
+  // Debounced price calculation - only for description changes
   useEffect(() => {
     if (description.length === 0) {
       setShowPrice(false);
+      setIsThinking(false);
       return;
     }
 
@@ -26,41 +34,32 @@ export function SmartPricingForm() {
     setShowPrice(false);
 
     const timer = setTimeout(() => {
-      // Dummy pricing logic
-      const basePrice = 300;
-      const textBonus = description.length * 2;
-      const urgencyBonus = urgency[0] * 100;
-      const price = basePrice + textBonus + urgencyBonus;
-
+      const price = calculatePrice(description, urgency[0]);
       setCalculatedPrice(price);
       setIsThinking(false);
       setShowPrice(true);
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [description, urgency]);
+  }, [description]); // Only depend on description, not urgency
 
-  // Recalculate when urgency changes (but only if there's text)
+  // Instant recalculation when urgency changes (no loading state)
   useEffect(() => {
     if (description.length > 0 && showPrice) {
-      const basePrice = 300;
-      const textBonus = description.length * 2;
-      const urgencyBonus = urgency[0] * 100;
-      setCalculatedPrice(basePrice + textBonus + urgencyBonus);
+      const price = calculatePrice(description, urgency[0]);
+      setCalculatedPrice(price);
     }
-  }, [urgency, description.length, showPrice]);
-
-  const urgencyLabels = ["Chill", "Relaxed", "Normal", "Urgent", "ASAP"];
+  }, [urgency, description, showPrice]);
 
   return (
-    <div className="space-y-6">
-      {/* Large Borderless Textarea */}
-      <div className="relative">
+    <div className="bg-white p-8 min-h-[500px] flex flex-col">
+      {/* Premium Notepad Textarea */}
+      <div className="mb-16">
         <Textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="e.g., I need someone to stand in line for me at the admin block..."
-          className="min-h-[150px] text-lg border-none shadow-none resize-none focus-visible:ring-0 bg-transparent placeholder:text-muted-foreground/60"
+          placeholder="Describe your task..."
+          className="min-h-[180px] text-3xl font-light border-none shadow-none resize-none focus-visible:ring-0 bg-transparent placeholder:text-muted-foreground/30 leading-relaxed"
         />
       </div>
 
@@ -71,85 +70,83 @@ export function SmartPricingForm() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="flex items-center gap-2 text-muted-foreground"
+            className="flex items-center justify-center gap-3 text-zinc-400 mb-8"
           >
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="text-sm">Thinking...</span>
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span className="text-sm font-medium tracking-wide">Calculating...</span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Suggested Price Card */}
+      {/* Glassmorphism Floating Price Dock */}
       <AnimatePresence>
         {showPrice && (
           <motion.div
-            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+            initial={{ opacity: 0, y: 60, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 40, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            exit={{ opacity: 0, y: 60, scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 260, damping: 24 }}
+            className="mt-auto"
           >
-            <Card className="rounded-2xl border-2 border-green-500/50 bg-gradient-to-br from-green-50 to-emerald-50 overflow-hidden">
-              <CardContent className="p-6 space-y-6">
-                {/* Price Display */}
-                <div className="text-center space-y-2">
-                  <div className="flex items-center justify-center gap-2 text-sm text-green-600 font-medium">
-                    <Sparkles className="h-4 w-4" />
-                    <span>Suggested Price</span>
-                  </div>
-                  <motion.div
-                    key={calculatedPrice}
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="text-4xl font-bold text-green-700"
-                  >
-                    Rs. {calculatedPrice.toLocaleString()}
-                  </motion.div>
-                </div>
+            <div className="relative backdrop-blur-2xl bg-white/80 border border-zinc-200/50 shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-3xl p-8 space-y-8">
+              {/* Emerald Glow */}
+              <div className="absolute inset-0 bg-emerald-500/10 blur-3xl rounded-full -z-10" />
 
-                {/* Urgency Slider */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">
-                      Urgency
-                    </span>
-                    <span className="text-sm font-semibold text-green-600 flex items-center gap-1">
-                      {urgency[0] >= 3 && <Zap className="h-3 w-3" />}
-                      {urgencyLabels[urgency[0]]}
-                    </span>
-                  </div>
-                  <div className="px-1">
-                    <Slider
-                      value={urgency}
-                      onValueChange={setUrgency}
-                      min={0}
-                      max={4}
-                      step={1}
-                      className="[&_[data-slot=slider-track]]:bg-green-200 [&_[data-slot=slider-range]]:bg-green-500 [&_[data-slot=slider-thumb]]:border-green-500"
-                    />
-                  </div>
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Chill</span>
-                    <span>ASAP</span>
-                  </div>
-                </div>
-
-                {/* Submit Button */}
-                <Button
-                  size="lg"
-                  className="w-full rounded-xl bg-green-600 hover:bg-green-700 text-lg h-14 font-semibold"
+              {/* Price Display */}
+              <div className="text-center space-y-2">
+                <p className="text-xs uppercase tracking-widest text-zinc-400 font-medium">
+                  Suggested Price
+                </p>
+                <motion.div
+                  key={calculatedPrice}
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="text-7xl font-light tracking-tighter text-zinc-900"
                 >
-                  Post for Rs. {calculatedPrice.toLocaleString()}
-                </Button>
-              </CardContent>
-            </Card>
+                  Rs. {calculatedPrice.toLocaleString()}
+                </motion.div>
+              </div>
+
+              {/* Elegant Urgency Slider */}
+              <div className="space-y-4">
+                <div className="px-2">
+                  <Slider
+                    value={urgency}
+                    onValueChange={setUrgency}
+                    min={0}
+                    max={4}
+                    step={1}
+                    className="[&_[data-slot=slider-track]]:h-1 [&_[data-slot=slider-track]]:bg-zinc-200 [&_[data-slot=slider-range]]:bg-emerald-500 [&_[data-slot=slider-thumb]]:border-emerald-500 [&_[data-slot=slider-thumb]]:h-5 [&_[data-slot=slider-thumb]]:w-5"
+                  />
+                </div>
+                <div className="flex justify-between items-center text-sm text-zinc-500">
+                  <span className="flex items-center gap-2">
+                    <Coffee className="h-4 w-4" strokeWidth={1.5} />
+                    Chill
+                  </span>
+                  <span className="flex items-center gap-2 text-emerald-600 font-medium">
+                    ASAP
+                    <Zap className="h-4 w-4" strokeWidth={1.5} fill="currentColor" />
+                  </span>
+                </div>
+              </div>
+
+              {/* Premium Submit Button */}
+              <Button
+                size="lg"
+                className="w-full h-16 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-xl font-semibold shadow-lg shadow-emerald-500/25 transition-all duration-300"
+              >
+                Post for Rs. {calculatedPrice.toLocaleString()}
+              </Button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Empty State Hint */}
       {!showPrice && !isThinking && description.length === 0 && (
-        <div className="text-center text-muted-foreground/60 py-8">
-          <p className="text-sm">Start typing to see the suggested price</p>
+        <div className="mt-auto text-center text-zinc-300 py-12">
+          <p className="text-lg font-light">Start typing to see the magic</p>
         </div>
       )}
     </div>
