@@ -52,15 +52,15 @@ export function SmartPricingForm() {
   }, [urgency, description, showPrice]);
 
   return (
-    <div className="bg-white dark:bg-zinc-950 border-0 dark:border dark:border-zinc-800 min-h-[550px] flex flex-col shadow-xl">
+    <div className="bg-white dark:bg-zinc-950 border-0 dark:border dark:border-zinc-800 min-h-[550px] max-h-[100dvh] sm:max-h-none flex flex-col shadow-xl overflow-hidden">
       {/* Header */}
-      <div className="px-8 pt-8 pb-2">
+      <div className="px-6 sm:px-8 pt-6 sm:pt-8 pb-2">
         <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Create a Task</h2>
         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Describe what you need and we'll suggest a fair price</p>
       </div>
 
       {/* Premium Notepad Textarea */}
-      <div className="px-6 py-4 flex-1">
+      <div className="px-6 py-4 flex-1 overflow-y-auto">
         <Textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -76,7 +76,7 @@ export function SmartPricingForm() {
       </div>
 
       {/* Bottom Section - Pinned */}
-      <div className="px-8 pb-8 mt-auto">
+      <div className="px-6 sm:px-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] pt-2 mt-auto">
         {/* Thinking Indicator */}
         <AnimatePresence>
           {isThinking && (

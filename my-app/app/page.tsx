@@ -84,7 +84,7 @@ export default function Home() {
       <header className="sticky top-0 z-50 bg-white/60 dark:bg-black/50 backdrop-blur-xl border-b border-zinc-200/30 dark:border-zinc-800/30">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <h1 className="text-xl font-bold tracking-tighter text-zinc-900 dark:text-zinc-100">
-            TaskVibe
+            CrowdServe
           </h1>
           <div className="flex items-center gap-3">
             <Button variant="ghost" className="text-zinc-600 dark:text-zinc-400 font-medium hover:text-zinc-900 dark:hover:text-white">
