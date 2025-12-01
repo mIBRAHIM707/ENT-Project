@@ -1,0 +1,13 @@
+# Project: CampusGig (University Marketplace MVP)
+- **Target Audience:** University students (Gen-Z). Needs to feel like a social app, not a job board.
+- **Tech Stack:** Next.js 14 App Router, TypeScript, Tailwind CSS, Framer Motion, Shadcn UI.
+- **Design System:**
+  - Roundness: `rounded-xl` or `rounded-2xl` (Soft/Friendly).
+  - Animation: Use `framer-motion` for hover states (scale up) and list entries.
+  - Vibe: Clean, white space, soft shadows, large avatars.
+- **Geography:** Pakistan (Topi/GIKI area).
+- **Currency:** PKR (Rs.).
+- **Code Rules:**
+  - Use `lucide-react` for icons.
+  - Always separate UI components into `components/ui` or `components/features`.
+  - Use "Client Components" (`"use client"`) only when interactivity is needed.
