@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Search, Utensils, BookOpen, Laptop, Car, Sparkles } from "lucide-react";
 import { JobCard } from "@/components/features/job-card";
 import { SmartPricingForm } from "@/components/features/smart-pricing-form";
+import { UserMenu } from "@/components/auth/user-menu";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -85,6 +86,12 @@ const categories = [
 export function HomeClient({ jobs }: HomeClientProps) {
   const [headerDialogOpen, setHeaderDialogOpen] = useState(false);
   const [heroDialogOpen, setHeroDialogOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch with Radix UI dialogs
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <div className="relative min-h-screen">
@@ -107,25 +114,32 @@ export function HomeClient({ jobs }: HomeClientProps) {
             CrowdServe
           </h1>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" className="text-zinc-600 dark:text-zinc-400 font-medium hover:text-zinc-900 dark:hover:text-white">
-              Login
-            </Button>
-            <Dialog open={headerDialogOpen} onOpenChange={setHeaderDialogOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  size="icon"
-                  className="rounded-full h-9 w-9 bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 shadow-lg shadow-zinc-900/20 dark:shadow-white/10"
-                >
-                  <Plus className="h-4 w-4 text-white dark:text-zinc-900" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-                <VisuallyHidden.Root>
-                  <DialogTitle>Create a Task</DialogTitle>
-                </VisuallyHidden.Root>
-                <SmartPricingForm onSuccess={() => setHeaderDialogOpen(false)} />
-              </DialogContent>
-            </Dialog>
+            <UserMenu />
+            {mounted ? (
+              <Dialog open={headerDialogOpen} onOpenChange={setHeaderDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    size="icon"
+                    className="rounded-full h-9 w-9 bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 shadow-lg shadow-zinc-900/20 dark:shadow-white/10"
+                  >
+                    <Plus className="h-4 w-4 text-white dark:text-zinc-900" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                  <VisuallyHidden.Root>
+                    <DialogTitle>Create a Task</DialogTitle>
+                  </VisuallyHidden.Root>
+                  <SmartPricingForm onSuccess={() => setHeaderDialogOpen(false)} />
+                </DialogContent>
+              </Dialog>
+            ) : (
+              <Button
+                size="icon"
+                className="rounded-full h-9 w-9 bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 shadow-lg shadow-zinc-900/20 dark:shadow-white/10"
+              >
+                <Plus className="h-4 w-4 text-white dark:text-zinc-900" />
+              </Button>
+            )}
           </div>
         </div>
       </header>
@@ -161,26 +175,39 @@ export function HomeClient({ jobs }: HomeClientProps) {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mt-10 max-w-2xl mx-auto"
           >
-            <Dialog open={heroDialogOpen} onOpenChange={setHeroDialogOpen}>
-              <DialogTrigger asChild>
-                <button className="w-full group">
-                  <div className="flex items-center gap-4 px-6 py-5 backdrop-blur-2xl bg-white/60 dark:bg-zinc-900/60 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-lg shadow-zinc-900/5 dark:shadow-black/20 hover:shadow-xl hover:shadow-emerald-500/10 hover:border-emerald-500/50 transition-all duration-300">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 group-hover:bg-emerald-500/10 transition-colors">
-                      <Search className="h-5 w-5 text-zinc-500 dark:text-zinc-400 group-hover:text-emerald-500 transition-colors" />
+            {mounted ? (
+              <Dialog open={heroDialogOpen} onOpenChange={setHeroDialogOpen}>
+                <DialogTrigger asChild>
+                  <button className="w-full group">
+                    <div className="flex items-center gap-4 px-6 py-5 backdrop-blur-2xl bg-white/60 dark:bg-zinc-900/60 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-lg shadow-zinc-900/5 dark:shadow-black/20 hover:shadow-xl hover:shadow-emerald-500/10 hover:border-emerald-500/50 transition-all duration-300">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 group-hover:bg-emerald-500/10 transition-colors">
+                        <Search className="h-5 w-5 text-zinc-500 dark:text-zinc-400 group-hover:text-emerald-500 transition-colors" />
+                      </div>
+                      <span className="text-lg text-zinc-500 dark:text-zinc-400 font-light tracking-tight">
+                        What do you need done today?
+                      </span>
                     </div>
-                    <span className="text-lg text-zinc-500 dark:text-zinc-400 font-light tracking-tight">
-                      What do you need done today?
-                    </span>
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                  <VisuallyHidden.Root>
+                    <DialogTitle>Create a Task</DialogTitle>
+                  </VisuallyHidden.Root>
+                  <SmartPricingForm onSuccess={() => setHeroDialogOpen(false)} />
+                </DialogContent>
+              </Dialog>
+            ) : (
+              <button className="w-full group">
+                <div className="flex items-center gap-4 px-6 py-5 backdrop-blur-2xl bg-white/60 dark:bg-zinc-900/60 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-lg shadow-zinc-900/5 dark:shadow-black/20 hover:shadow-xl hover:shadow-emerald-500/10 hover:border-emerald-500/50 transition-all duration-300">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 group-hover:bg-emerald-500/10 transition-colors">
+                    <Search className="h-5 w-5 text-zinc-500 dark:text-zinc-400 group-hover:text-emerald-500 transition-colors" />
                   </div>
-                </button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-                <VisuallyHidden.Root>
-                  <DialogTitle>Create a Task</DialogTitle>
-                </VisuallyHidden.Root>
-                <SmartPricingForm onSuccess={() => setHeroDialogOpen(false)} />
-              </DialogContent>
-            </Dialog>
+                  <span className="text-lg text-zinc-500 dark:text-zinc-400 font-light tracking-tight">
+                    What do you need done today?
+                  </span>
+                </div>
+              </button>
+            )}
           </motion.div>
         </div>
       </section>

@@ -6,8 +6,8 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "TaskVibe - Campus Marketplace",
-  description: "The marketplace for Topi. Get campus life sorted.",
+  title: "CrowdServe",
+  description: "The marketplace for GIKI. Get campus life sorted.",
 };
 
 export default function RootLayout({
