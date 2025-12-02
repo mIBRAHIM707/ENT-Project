@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, MessageCircle, X, Inbox, ChevronRight, Clock, CheckCheck, ArrowLeft } from "lucide-react";
+import { Bell, MessageCircle, X, Inbox, ChevronRight, ArrowLeft, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { createClient } from "@/utils/supabase/client";
@@ -21,16 +21,18 @@ interface Notification {
   read: boolean;
 }
 
-interface AllMessage {
-  id: string;
+// Conversation thread for the full inbox view
+interface ConversationThread {
   conversationId: string;
   jobId: string;
   jobTitle: string;
-  senderId: string;
-  senderEmail: string;
-  content: string;
-  createdAt: string;
-  isFromMe: boolean;
+  otherUserId: string;
+  otherUserEmail: string;
+  lastMessage: string;
+  lastMessageAt: string;
+  lastMessageFromMe: boolean;
+  messageCount: number;
+  isJobOwner: boolean; // true if current user owns the job
 }
 
 interface NotificationsPopoverProps {
@@ -65,15 +67,15 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
   const [isOpen, setIsOpen] = useState(false);
   const [showFullInbox, setShowFullInbox] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [allMessages, setAllMessages] = useState<AllMessage[]>([]);
+  const [conversations, setConversations] = useState<ConversationThread[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [loadingAllMessages, setLoadingAllMessages] = useState(false);
+  const [loadingConversations, setLoadingConversations] = useState(false);
   const supabase = createClient();
 
-  // Fetch all messages for full inbox view
-  const fetchAllMessages = useCallback(async () => {
+  // Fetch all conversation threads for full inbox view
+  const fetchConversations = useCallback(async () => {
     if (!userId) return;
-    setLoadingAllMessages(true);
+    setLoadingConversations(true);
 
     try {
       // Get conversations where user is the worker
@@ -91,8 +93,8 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
         `)
         .eq("worker_id", userId);
 
-      // Get conversations where user owns the job
-      const { data: ownerConvs } = await supabase
+      // Get all conversations to find ones where user owns the job
+      const { data: allConvs } = await supabase
         .from("conversations")
         .select(`
           id,
@@ -105,69 +107,73 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
           )
         `);
 
-      // Combine and dedupe conversations
-      const allConvs = [...(workerConvs || [])];
-      const seenIds = new Set(allConvs.map(c => c.id));
+      // Combine conversations
+      const myConversations = [...(workerConvs || [])];
+      const seenIds = new Set(myConversations.map(c => c.id));
       
-      for (const conv of ownerConvs || []) {
+      for (const conv of allConvs || []) {
         const job = conv.jobs as unknown as { id: string; title: string; user_id: string };
         if (job && job.user_id === userId && !seenIds.has(conv.id)) {
-          allConvs.push(conv);
+          myConversations.push(conv);
         }
       }
 
-      if (allConvs.length === 0) {
-        setAllMessages([]);
+      if (myConversations.length === 0) {
+        setConversations([]);
         return;
       }
 
-      // Get ALL messages from all conversations
-      const allMsgs: AllMessage[] = [];
+      // Build conversation threads
+      const threads: ConversationThread[] = [];
 
-      for (const conv of allConvs) {
-        const { data: messages } = await supabase
+      for (const conv of myConversations) {
+        const job = conv.jobs as unknown as { id: string; title: string; user_id: string };
+        const isJobOwner = job.user_id === userId;
+        const otherUserId = isJobOwner ? conv.worker_id : job.user_id;
+
+        // Get the other user's profile
+        const { data: otherProfile } = await supabase
+          .from("profiles")
+          .select("email")
+          .eq("id", otherUserId)
+          .single();
+
+        // Get message count and last message
+        const { data: messages, count } = await supabase
           .from("messages")
-          .select("*")
+          .select("*", { count: "exact" })
           .eq("conversation_id", conv.id)
           .order("created_at", { ascending: false })
-          .limit(50); // Limit per conversation
+          .limit(1);
 
-        if (messages) {
-          for (const msg of messages) {
-            // Get sender profile
-            const { data: senderProfile } = await supabase
-              .from("profiles")
-              .select("email")
-              .eq("id", msg.sender_id)
-              .single();
+        const lastMessage = messages?.[0];
 
-            const job = conv.jobs as unknown as { id: string; title: string; user_id: string };
-
-            allMsgs.push({
-              id: msg.id,
-              conversationId: conv.id,
-              jobId: job.id,
-              jobTitle: job.title,
-              senderId: msg.sender_id,
-              senderEmail: senderProfile?.email || "",
-              content: msg.content,
-              createdAt: msg.created_at,
-              isFromMe: msg.sender_id === userId,
-            });
-          }
+        if (lastMessage) {
+          threads.push({
+            conversationId: conv.id,
+            jobId: job.id,
+            jobTitle: job.title,
+            otherUserId,
+            otherUserEmail: otherProfile?.email || "",
+            lastMessage: lastMessage.content,
+            lastMessageAt: lastMessage.created_at,
+            lastMessageFromMe: lastMessage.sender_id === userId,
+            messageCount: count || 0,
+            isJobOwner,
+          });
         }
       }
 
-      // Sort by date, newest first
-      allMsgs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      // Sort by last message date
+      threads.sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
 
-      setAllMessages(allMsgs);
+      setConversations(threads);
     } finally {
-      setLoadingAllMessages(false);
+      setLoadingConversations(false);
     }
   }, [userId, supabase]);
 
-  // Fetch notifications on mount
+  // Fetch notifications on mount (for the popover - shows latest messages from others)
   const fetchNotifications = useCallback(async () => {
     if (!userId) return;
 
@@ -186,8 +192,8 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
       `)
       .eq("worker_id", userId);
 
-    // Get conversations where user owns the job
-    const { data: ownerConvs } = await supabase
+    // Get all conversations to find ones where user owns the job
+    const { data: allConvs } = await supabase
       .from("conversations")
       .select(`
         id,
@@ -200,18 +206,18 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
         )
       `);
 
-    // Combine and dedupe conversations
-    const conversations = [...(workerConvs || [])];
-    const seenIds = new Set(conversations.map(c => c.id));
+    // Combine conversations
+    const myConversations = [...(workerConvs || [])];
+    const seenIds = new Set(myConversations.map(c => c.id));
     
-    for (const conv of ownerConvs || []) {
+    for (const conv of allConvs || []) {
       const job = conv.jobs as unknown as { id: string; title: string; user_id: string };
       if (job && job.user_id === userId && !seenIds.has(conv.id)) {
-        conversations.push(conv);
+        myConversations.push(conv);
       }
     }
 
-    if (conversations.length === 0) {
+    if (myConversations.length === 0) {
       setNotifications([]);
       return;
     }
@@ -219,7 +225,7 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
     // Get latest message from each conversation where user is NOT the sender
     const notifs: Notification[] = [];
 
-    for (const conv of conversations) {
+    for (const conv of myConversations) {
       const { data: latestMessage } = await supabase
         .from("messages")
         .select("*")
@@ -249,7 +255,7 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
           senderEmail: senderProfile?.email || "",
           content: latestMessage.content,
           createdAt: latestMessage.created_at,
-          read: false, // We'd need a read status table for proper tracking
+          read: false,
         });
       }
     }
@@ -289,7 +295,7 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
                 id,
                 job_id,
                 worker_id,
-                jobs!inner (
+                jobs (
                   id,
                   title,
                   user_id
@@ -350,6 +356,14 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
     if (onOpenChat) {
       onOpenChat(notif.jobId, notif.conversationId);
     }
+    setIsOpen(false);
+  };
+
+  const handleConversationClick = (thread: ConversationThread) => {
+    if (onOpenChat) {
+      onOpenChat(thread.jobId, thread.conversationId);
+    }
+    setShowFullInbox(false);
     setIsOpen(false);
   };
 
@@ -515,26 +529,25 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
               </div>
 
               {/* Footer */}
-              {notifications.length > 0 && (
-                <div className="px-5 py-3 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/30">
-                  <button 
-                    onClick={() => {
-                      setShowFullInbox(true);
-                      fetchAllMessages();
-                    }}
-                    className="w-full flex items-center justify-center gap-1.5 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
-                  >
-                    View all messages
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
-              )}
+              <div className="px-5 py-3 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/30">
+                <button 
+                  onClick={() => {
+                    setIsOpen(false); // Close the popover first
+                    setShowFullInbox(true);
+                    fetchConversations();
+                  }}
+                  className="w-full flex items-center justify-center gap-1.5 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
+                >
+                  View all conversations
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
 
-      {/* Full Inbox Modal */}
+      {/* Full Inbox Modal - Conversations View */}
       <AnimatePresence>
         {showFullInbox && (
           <>
@@ -553,10 +566,11 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="fixed right-0 top-0 bottom-0 z-[101] w-full max-w-lg bg-white dark:bg-zinc-900 shadow-2xl"
+              className="fixed right-0 top-0 z-[101] w-full max-w-md h-screen bg-white dark:bg-zinc-900 shadow-2xl"
+              style={{ height: '100vh' }}
             >
               {/* Header */}
-              <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-5 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl">
+              <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 py-5 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 z-10">
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setShowFullInbox(false)}
@@ -565,9 +579,9 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
                     <ArrowLeft className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
                   </button>
                   <div>
-                    <h2 className="text-xl font-bold text-zinc-900 dark:text-white">All Messages</h2>
+                    <h2 className="text-xl font-bold text-zinc-900 dark:text-white">Conversations</h2>
                     <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                      {allMessages.length} message{allMessages.length !== 1 ? "s" : ""}
+                      {conversations.length} active chat{conversations.length !== 1 ? "s" : ""}
                     </p>
                   </div>
                 </div>
@@ -581,80 +595,102 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
                 </Button>
               </div>
 
-              {/* Messages List */}
-              <div className="h-[calc(100vh-88px)] overflow-y-auto scrollbar-premium">
-                {loadingAllMessages ? (
+              {/* Conversations List */}
+              <div className="absolute top-[88px] left-0 right-0 bottom-0 overflow-y-auto scrollbar-premium bg-white dark:bg-zinc-900">
+                {loadingConversations ? (
                   <div className="flex flex-col items-center justify-center py-20">
                     <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-                    <p className="mt-4 text-sm text-zinc-500">Loading messages...</p>
+                    <p className="mt-4 text-sm text-zinc-500">Loading conversations...</p>
                   </div>
-                ) : allMessages.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 px-6">
+                ) : conversations.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 px-6 bg-white dark:bg-zinc-900">
                     <div className="flex items-center justify-center w-20 h-20 rounded-full bg-zinc-100 dark:bg-zinc-800 mb-5">
-                      <MessageCircle className="h-9 w-9 text-zinc-400" />
+                      <Users className="h-9 w-9 text-zinc-400" />
                     </div>
-                    <p className="text-lg font-semibold text-zinc-900 dark:text-white mb-2">No messages yet</p>
+                    <p className="text-lg font-semibold text-zinc-900 dark:text-white mb-2">No conversations yet</p>
                     <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center">
-                      Start a conversation by applying to a gig or when someone applies to yours
+                      Start chatting by applying to a gig or when someone applies to yours
                     </p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                    {allMessages.map((msg, index) => (
+                  <div className="p-4 space-y-3 bg-white dark:bg-zinc-900 min-h-full">
+                    {conversations.map((thread, index) => (
                       <motion.button
-                        key={msg.id}
+                        key={thread.conversationId}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: Math.min(index * 0.02, 0.3) }}
-                        onClick={() => {
-                          if (onOpenChat) {
-                            onOpenChat(msg.jobId, msg.conversationId);
-                          }
-                          setShowFullInbox(false);
-                          setIsOpen(false);
-                        }}
-                        className="w-full flex items-start gap-4 px-6 py-4 text-left transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                        transition={{ delay: Math.min(index * 0.05, 0.3) }}
+                        onClick={() => handleConversationClick(thread)}
+                        className="w-full bg-zinc-50 dark:bg-zinc-800 rounded-2xl p-4 text-left transition-all hover:shadow-lg hover:scale-[1.02] border border-zinc-200 dark:border-zinc-700 shadow-sm"
                       >
-                        {/* Avatar */}
-                        <div className="relative flex-shrink-0">
-                          <Avatar className="h-12 w-12 rounded-xl ring-2 ring-white dark:ring-zinc-800 shadow-md">
-                            <AvatarImage
-                              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${msg.senderId}`}
-                              className="rounded-xl"
-                            />
-                            <AvatarFallback className="rounded-xl bg-gradient-to-br from-violet-400 to-purple-500 text-white font-bold">
-                              {extractRegNumber(msg.senderEmail).slice(0, 2)}
-                            </AvatarFallback>
-                          </Avatar>
-                          {msg.isFromMe && (
-                            <div className="absolute -bottom-1 -right-1 flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-zinc-900">
-                              <CheckCheck className="h-2.5 w-2.5 text-white" />
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2 mb-1">
-                            <p className="font-semibold text-zinc-900 dark:text-white">
-                              {msg.isFromMe ? "You" : extractRegNumber(msg.senderEmail)}
-                            </p>
-                            <div className="flex items-center gap-1.5 text-zinc-400 dark:text-zinc-500">
-                              <Clock className="h-3 w-3" />
-                              <span className="text-xs">
-                                {formatRelativeTime(msg.createdAt)}
+                        <div className="flex items-start gap-4">
+                          {/* Avatar */}
+                          <div className="relative flex-shrink-0">
+                            <Avatar className="h-14 w-14 rounded-2xl ring-2 ring-zinc-100 dark:ring-zinc-800 shadow-md">
+                              <AvatarImage
+                                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${thread.otherUserId}`}
+                                className="rounded-2xl"
+                              />
+                              <AvatarFallback className="rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white font-bold text-lg">
+                                {extractRegNumber(thread.otherUserEmail).slice(0, 2)}
+                              </AvatarFallback>
+                            </Avatar>
+                            {/* Role indicator */}
+                            <div className={`absolute -bottom-1 -right-1 flex items-center justify-center w-6 h-6 rounded-full ring-2 ring-white dark:ring-zinc-900 ${
+                              thread.isJobOwner 
+                                ? "bg-purple-500" 
+                                : "bg-blue-500"
+                            }`}>
+                              <span className="text-[10px] font-bold text-white">
+                                {thread.isJobOwner ? "👤" : "💼"}
                               </span>
                             </div>
                           </div>
-                          <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mb-1.5">
-                            {msg.jobTitle}
-                          </p>
-                          <p className="text-sm text-zinc-600 dark:text-zinc-300 line-clamp-2">
-                            {msg.content}
-                          </p>
-                        </div>
 
-                        <ChevronRight className="flex-shrink-0 h-5 w-5 text-zinc-300 dark:text-zinc-600 mt-3" />
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <p className="font-bold text-zinc-900 dark:text-white text-base">
+                                {extractRegNumber(thread.otherUserEmail)}
+                              </p>
+                              <span className="text-xs text-zinc-400 dark:text-zinc-500 flex-shrink-0">
+                                {formatRelativeTime(thread.lastMessageAt)}
+                              </span>
+                            </div>
+                            
+                            {/* Job title badge */}
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                thread.isJobOwner 
+                                  ? "bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300"
+                                  : "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300"
+                              }`}>
+                                {thread.isJobOwner ? "Your gig" : "Applied"}
+                              </span>
+                              <span className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                                {thread.jobTitle}
+                              </span>
+                            </div>
+                            
+                            {/* Last message */}
+                            <p className="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-1">
+                              {thread.lastMessageFromMe && (
+                                <span className="text-zinc-400 dark:text-zinc-500">You: </span>
+                              )}
+                              {thread.lastMessage}
+                            </p>
+                          </div>
+
+                          {/* Message count & Arrow */}
+                          <div className="flex flex-col items-end gap-2">
+                            <div className="flex items-center justify-center min-w-[24px] h-6 px-2 rounded-full bg-zinc-100 dark:bg-zinc-800">
+                              <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                                {thread.messageCount}
+                              </span>
+                            </div>
+                            <ChevronRight className="h-5 w-5 text-zinc-300 dark:text-zinc-600" />
+                          </div>
+                        </div>
                       </motion.button>
                     ))}
                   </div>
