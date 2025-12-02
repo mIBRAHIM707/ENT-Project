@@ -11,6 +11,13 @@ interface CreateJobResult {
 export async function createJob(formData: FormData): Promise<CreateJobResult> {
   const supabase = await createClient();
 
+  // Get the authenticated user
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "You must be logged in to post a job" };
+  }
+
   // Extract form data
   const title = formData.get("title") as string;
   const priceString = formData.get("price") as string;
@@ -28,14 +35,13 @@ export async function createJob(formData: FormData): Promise<CreateJobResult> {
     return { error: "Invalid price" };
   }
 
-  // Insert job into database (matching your table: title, price, urgency, location)
-  // Note: user_id is required in your table - for MVP without auth, we skip it
-  // You'll need to either make user_id nullable or add auth later
+  // Insert job into database with the authenticated user's ID
   const { error } = await supabase.from("jobs").insert({
     title,
     price,
     urgency,
     location,
+    user_id: user.id,
   });
 
   if (error) {

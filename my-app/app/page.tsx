@@ -30,7 +30,14 @@ function getTimeAgo(timestamp: string): string {
   return `${diffInWeeks}w ago`;
 }
 
-// Database row type
+// Extract registration number from GIKI email (e.g., u2023446@giki.edu.pk -> 2023446)
+function extractRegNumber(email: string | null): string {
+  if (!email) return "Student";
+  const match = email.match(/[a-z]?(\d+)@/i);
+  return match ? match[1] : "Student";
+}
+
+// Database row type from jobs_with_poster view
 interface JobRow {
   id: string;
   title: string;
@@ -38,16 +45,20 @@ interface JobRow {
   urgency: string;
   location: string;
   user_id: string | null;
-  created_at?: string; // Optional - may not exist in table
+  created_at?: string;
+  student_name?: string | null;
+  student_email?: string | null;
+  avatar_url?: string | null;
 }
 
 export default async function Home() {
   const supabase = await createClient();
 
-  // Fetch jobs from Supabase (without ordering by created_at if it doesn't exist)
+  // Fetch jobs with poster info from the view
   const { data: jobsData, error } = await supabase
-    .from("jobs")
-    .select("*");
+    .from("jobs_with_poster")
+    .select("*")
+    .order("created_at", { ascending: false });
 
   if (error) {
     console.error("Error fetching jobs:", error);
@@ -60,11 +71,12 @@ export default async function Home() {
     price: job.price,
     urgency: job.urgency || "Flexible",
     location: job.location || "Campus",
-    // Guest mode: use placeholder for missing user info
-    studentName: job.user_id ? "Student" : "Guest User",
-    avatarUrl: job.user_id
-      ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${job.user_id}`
-      : "https://api.dicebear.com/7.x/avataaars/svg?seed=Guest",
+    // Extract reg number from email (e.g., u2023446@giki.edu.pk -> 2023446)
+    studentName: extractRegNumber(job.student_email),
+    avatarUrl: job.avatar_url || 
+      (job.user_id 
+        ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${job.user_id}`
+        : "https://api.dicebear.com/7.x/avataaars/svg?seed=Guest"),
     timeAgo: job.created_at ? getTimeAgo(job.created_at) : "Recently",
   }));
 
