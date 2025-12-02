@@ -156,8 +156,11 @@ CREATE TRIGGER on_job_completed
 
 -- ============================================
 -- UPDATE VIEW: Jobs with Poster Info (add new columns)
+-- Must DROP first because we're changing column structure
 -- ============================================
-CREATE OR REPLACE VIEW jobs_with_poster AS
+DROP VIEW IF EXISTS jobs_with_poster CASCADE;
+
+CREATE VIEW jobs_with_poster AS
 SELECT 
   j.id,
   j.title,

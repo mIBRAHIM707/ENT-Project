@@ -329,9 +329,9 @@ export function HomeClient({ jobs }: HomeClientProps) {
               /* Skeleton placeholder to prevent layout shift */
               <div className="space-y-4 animate-pulse">
                 <div className="flex gap-3">
-                  <div className="flex-1 h-12 bg-zinc-200 dark:bg-zinc-800 rounded-2xl" />
-                  <div className="w-[180px] h-12 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />
-                  <div className="w-12 h-12 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />
+                  <div className="flex-1 h-14 bg-zinc-200 dark:bg-zinc-800 rounded-2xl" />
+                  <div className="w-[160px] h-14 bg-zinc-200 dark:bg-zinc-800 rounded-2xl" />
+                  <div className="w-28 h-14 bg-zinc-200 dark:bg-zinc-800 rounded-2xl" />
                 </div>
               </div>
             )}
