@@ -17,12 +17,28 @@ import {
 import { createClient } from "@/utils/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
+interface Profile {
+  full_name: string | null;
+  avatar_url: string | null;
+}
+
 export function UserMenu() {
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const supabase = createClient();
+
+  // Fetch profile data
+  const fetchProfile = async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("full_name, avatar_url")
+      .eq("id", userId)
+      .single();
+    setProfile(data);
+  };
 
   // Get user on mount and listen for auth changes
   useEffect(() => {
@@ -32,6 +48,9 @@ export function UserMenu() {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+      if (user) {
+        await fetchProfile(user.id);
+      }
       setLoading(false);
     };
 
@@ -39,8 +58,13 @@ export function UserMenu() {
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setUser(session?.user ?? null);
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+        } else {
+          setProfile(null);
+        }
         setLoading(false);
       }
     );
@@ -68,10 +92,18 @@ export function UserMenu() {
     return `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
   };
 
-  // Get initials from email
-  const getInitials = (email: string) => {
-    const rollNumber = extractRollNumber(email);
-    return rollNumber.slice(0, 2).toUpperCase();
+  // Get initials from name or roll number
+  const getInitials = (name: string) => {
+    // If it looks like a roll number (starts with letter + digits), use first 2 chars
+    if (/^[a-z]?\d+/i.test(name)) {
+      return name.slice(0, 2).toUpperCase();
+    }
+    // Otherwise get initials from words (e.g., "Ali Khan" -> "AK")
+    const words = name.trim().split(/\s+/);
+    if (words.length >= 2) {
+      return (words[0][0] + words[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
   };
 
   // Don't render anything until mounted (prevents hydration mismatch)
@@ -109,8 +141,9 @@ export function UserMenu() {
   // Show user menu if logged in
   const userEmail = user.email || "";
   const rollNumber = extractRollNumber(userEmail);
-  const avatarUrl = getAvatarUrl(userEmail);
-  const initials = getInitials(userEmail);
+  const displayName = profile?.full_name || rollNumber;
+  const avatarUrl = profile?.avatar_url || getAvatarUrl(userEmail);
+  const initials = getInitials(displayName);
 
   return (
     <DropdownMenu>
@@ -120,7 +153,7 @@ export function UserMenu() {
           className="relative h-9 w-9 rounded-full p-0 hover:ring-2 hover:ring-emerald-500/50 transition-all"
         >
           <Avatar className="h-9 w-9 border-2 border-zinc-200 dark:border-zinc-700">
-            <AvatarImage src={avatarUrl} alt={rollNumber} />
+            <AvatarImage src={avatarUrl} alt={displayName} />
             <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white text-sm font-semibold">
               {initials}
             </AvatarFallback>
@@ -135,7 +168,7 @@ export function UserMenu() {
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-semibold text-zinc-900 dark:text-white">
-              {rollNumber}
+              {displayName}
             </p>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
               {userEmail}

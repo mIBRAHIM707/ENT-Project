@@ -74,8 +74,8 @@ export default async function Home() {
     urgency: job.urgency || "Flexible",
     location: job.location || "Campus",
     userId: job.user_id || "",
-    // Extract reg number from email (e.g., u2023446@giki.edu.pk -> 2023446)
-    studentName: extractRegNumber(job.student_email),
+    // Use display name if set, otherwise fall back to roll number from email
+    studentName: job.student_name || extractRegNumber(job.student_email),
     avatarUrl: job.avatar_url || 
       (job.user_id 
         ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${job.user_id}`

@@ -51,6 +51,7 @@ interface Applicant {
   conversationId: string;
   workerId: string;
   workerEmail: string;
+  workerName: string | null;
   lastMessage?: string;
   lastMessageTime?: string;
 }
@@ -68,6 +69,12 @@ function extractRegNumber(email: string | null | undefined): string {
   if (!email) return "User";
   const match = email.match(/[a-z]?(\d+)@/i);
   return match ? match[1] : "User";
+}
+
+// Get display name or fall back to roll number
+function getDisplayName(name: string | null | undefined, email: string | null | undefined): string {
+  if (name && name.trim()) return name;
+  return extractRegNumber(email);
 }
 
 // Format time for messages
@@ -146,10 +153,10 @@ export function ChatSheet({
       const workerIds = conversations.map(c => c.worker_id);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, email")
+        .select("id, email, full_name")
         .in("id", workerIds);
 
-      const profileMap = new Map(profiles?.map(p => [p.id, p.email]) || []);
+      const profileMap = new Map(profiles?.map(p => [p.id, { email: p.email, name: p.full_name }]) || []);
 
       // Get last message for each conversation
       const applicantData: Applicant[] = await Promise.all(
@@ -162,10 +169,12 @@ export function ChatSheet({
             .limit(1)
             .single();
 
+          const profile = profileMap.get(conv.worker_id);
           return {
             conversationId: conv.id,
             workerId: conv.worker_id,
-            workerEmail: profileMap.get(conv.worker_id) || "",
+            workerEmail: profile?.email || "",
+            workerName: profile?.name || null,
             lastMessage: lastMsg?.content,
             lastMessageTime: lastMsg?.created_at,
           };

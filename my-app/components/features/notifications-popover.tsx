@@ -15,6 +15,7 @@ interface Notification {
   jobTitle: string;
   senderId: string;
   senderEmail: string;
+  senderName: string | null;
   content: string;
   createdAt: string;
   read: boolean;
@@ -26,6 +27,7 @@ interface ConversationThread {
   jobTitle: string;
   otherUserId: string;
   otherUserEmail: string;
+  otherUserName: string | null;
   lastMessage: string;
   lastMessageAt: string;
   lastMessageFromMe: boolean;
@@ -42,6 +44,12 @@ function extractRegNumber(email: string | null | undefined): string {
   if (!email) return "User";
   const match = email.match(/[a-z]?(\d+)@/i);
   return match ? match[1] : "User";
+}
+
+// Get display name or fall back to roll number
+function getDisplayName(name: string | null | undefined, email: string | null | undefined): string {
+  if (name && name.trim()) return name;
+  return extractRegNumber(email);
 }
 
 function formatRelativeTime(dateString: string): string {
@@ -106,7 +114,7 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
 
         const { data: otherProfile } = await supabase
           .from("profiles")
-          .select("email")
+          .select("email, full_name")
           .eq("id", otherUserId)
           .single();
 
@@ -126,6 +134,7 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
             jobTitle: job.title,
             otherUserId,
             otherUserEmail: otherProfile?.email || "",
+            otherUserName: otherProfile?.full_name || null,
             lastMessage: lastMessage.content,
             lastMessageAt: lastMessage.created_at,
             lastMessageFromMe: lastMessage.sender_id === userId,
@@ -184,7 +193,7 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
       if (latestMessage) {
         const { data: senderProfile } = await supabase
           .from("profiles")
-          .select("email")
+          .select("email, full_name")
           .eq("id", latestMessage.sender_id)
           .single();
 
@@ -198,6 +207,7 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
           jobTitle: job.title,
           senderId: latestMessage.sender_id,
           senderEmail: senderProfile?.email || "",
+          senderName: senderProfile?.full_name || null,
           content: latestMessage.content,
           createdAt: latestMessage.created_at,
           read: false,
@@ -241,7 +251,7 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
             if (isUserInConversation && isFromOtherUser) {
               const { data: senderProfile } = await supabase
                 .from("profiles")
-                .select("email")
+                .select("email, full_name")
                 .eq("id", payload.new.sender_id)
                 .single();
 
@@ -253,6 +263,7 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
                 jobTitle: job.title,
                 senderId: payload.new.sender_id,
                 senderEmail: senderProfile?.email || "",
+                senderName: senderProfile?.full_name || null,
                 content: payload.new.content,
                 createdAt: payload.new.created_at,
                 read: false,
@@ -406,7 +417,7 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
                               className="rounded-2xl"
                             />
                             <AvatarFallback className="rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 text-white font-semibold">
-                              {extractRegNumber(notif.senderEmail).slice(0, 2)}
+                              {getDisplayName(notif.senderName, notif.senderEmail).slice(0, 2)}
                             </AvatarFallback>
                           </Avatar>
                           {!notif.read && (
@@ -418,7 +429,7 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline justify-between gap-2 mb-1">
                             <span className="font-semibold text-[15px] text-zinc-900 dark:text-white">
-                              {extractRegNumber(notif.senderEmail)}
+                              {getDisplayName(notif.senderName, notif.senderEmail)}
                             </span>
                             <span className="text-[12px] text-zinc-400 dark:text-zinc-500 tabular-nums">
                               {formatRelativeTime(notif.createdAt)}
@@ -546,7 +557,7 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
                                 className="rounded-2xl"
                               />
                               <AvatarFallback className="rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white font-bold text-lg">
-                                {extractRegNumber(thread.otherUserEmail).slice(0, 2)}
+                                {getDisplayName(thread.otherUserName, thread.otherUserEmail).slice(0, 2)}
                               </AvatarFallback>
                             </Avatar>
                           </div>
@@ -556,7 +567,7 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
                             <div className="flex items-center justify-between gap-3 mb-1.5">
                               <div className="flex items-center gap-2 min-w-0">
                                 <span className="font-semibold text-[16px] text-zinc-900 dark:text-white truncate">
-                                  {extractRegNumber(thread.otherUserEmail)}
+                                  {getDisplayName(thread.otherUserName, thread.otherUserEmail)}
                                 </span>
                                 <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
                                   thread.isJobOwner 
