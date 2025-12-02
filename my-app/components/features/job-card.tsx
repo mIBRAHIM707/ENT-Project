@@ -12,6 +12,7 @@ interface JobCardProps {
   avatarUrl: string;
   studentName: string;
   timeAgo: string;
+  onClick?: () => void;
 }
 
 export function JobCard({
@@ -22,12 +23,14 @@ export function JobCard({
   avatarUrl,
   studentName,
   timeAgo,
+  onClick,
 }: JobCardProps) {
   return (
     <motion.div
       whileHover={{ y: -4 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
       className="group cursor-pointer"
+      onClick={onClick}
     >
       <div className="relative bg-white dark:bg-zinc-900/50 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 p-5 hover:border-emerald-500/50 dark:hover:border-emerald-500/50 hover:shadow-xl hover:shadow-zinc-200/50 dark:hover:shadow-emerald-500/5 transition-all duration-300">
         {/* Price Tag - Floating */}

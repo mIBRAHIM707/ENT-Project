@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Search, Utensils, BookOpen, Laptop, Car, Sparkles } from "lucide-react";
 import { JobCard } from "@/components/features/job-card";
 import { SmartPricingForm } from "@/components/features/smart-pricing-form";
+import { ChatSheet } from "@/components/features/chat-sheet";
 import { UserMenu } from "@/components/auth/user-menu";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,14 +15,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
+import { createClient } from "@/utils/supabase/client";
 
 // Job type from database
 interface Job {
   id: string;
   title: string;
+  description?: string;
   price: number;
   urgency: string;
   location: string;
+  userId: string;
   studentName: string;
   avatarUrl: string;
   timeAgo: string;
@@ -87,14 +91,68 @@ export function HomeClient({ jobs }: HomeClientProps) {
   const [headerDialogOpen, setHeaderDialogOpen] = useState(false);
   const [heroDialogOpen, setHeroDialogOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  
+  // Chat sheet state
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [chatSheetOpen, setChatSheetOpen] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+
+  const supabase = createClient();
 
   // Prevent hydration mismatch with Radix UI dialogs
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // Get current user on mount
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+      setCurrentUserEmail(user?.email || null);
+    };
+    getUser();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setCurrentUserId(session?.user?.id || null);
+      setCurrentUserEmail(session?.user?.email || null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase.auth]);
+
+  // Handle job card click
+  const handleJobClick = (job: Job) => {
+    setSelectedJob({
+      ...job,
+      description: job.description || "",
+    });
+    setChatSheetOpen(true);
+  };
+
   return (
     <div className="relative min-h-screen">
+      {/* Chat Sheet */}
+      <ChatSheet
+        job={selectedJob ? {
+          id: selectedJob.id,
+          title: selectedJob.title,
+          description: selectedJob.description,
+          price: selectedJob.price,
+          urgency: selectedJob.urgency,
+          location: selectedJob.location,
+          userId: selectedJob.userId,
+          studentName: selectedJob.studentName,
+          avatarUrl: selectedJob.avatarUrl,
+        } : null}
+        isOpen={chatSheetOpen}
+        onClose={() => setChatSheetOpen(false)}
+        currentUserId={currentUserId}
+        currentUserEmail={currentUserEmail}
+      />
+
       {/* Fixed Grid Background - Apple Style */}
       <div className="fixed inset-0 -z-10 h-full w-full bg-white dark:bg-black">
         <div className="absolute bottom-0 left-0 right-0 top-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
@@ -313,6 +371,7 @@ export function HomeClient({ jobs }: HomeClientProps) {
                       avatarUrl={job.avatarUrl}
                       studentName={job.studentName}
                       timeAgo={job.timeAgo}
+                      onClick={() => handleJobClick(job)}
                     />
                   </motion.div>
                 ))}

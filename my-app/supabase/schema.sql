@@ -184,3 +184,147 @@ CREATE OR REPLACE FUNCTION get_user_email(user_uuid UUID)
 RETURNS TEXT AS $$
   SELECT email FROM profiles WHERE id = user_uuid;
 $$ LANGUAGE sql SECURITY DEFINER;
+
+-- ============================================
+-- CONVERSATIONS TABLE
+-- Links a job with a worker (applicant)
+-- ============================================
+CREATE TABLE IF NOT EXISTS conversations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  
+  -- The job this conversation is about
+  job_id UUID NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+  
+  -- The worker/applicant (NOT the job owner)
+  worker_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  
+  -- Timestamps
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  
+  -- Ensure one conversation per job per worker
+  UNIQUE(job_id, worker_id)
+);
+
+-- Indexes for conversations
+CREATE INDEX IF NOT EXISTS conversations_job_id_idx ON conversations(job_id);
+CREATE INDEX IF NOT EXISTS conversations_worker_id_idx ON conversations(worker_id);
+
+-- Enable RLS
+ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
+
+-- Policy: Users can view conversations they're part of (as job owner or worker)
+CREATE POLICY "Users can view their conversations"
+  ON conversations
+  FOR SELECT
+  TO authenticated
+  USING (
+    auth.uid() = worker_id OR 
+    auth.uid() IN (SELECT user_id FROM jobs WHERE id = job_id)
+  );
+
+-- Policy: Authenticated users can create conversations (as worker applying)
+CREATE POLICY "Workers can create conversations"
+  ON conversations
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = worker_id);
+
+-- Trigger for conversations updated_at
+CREATE TRIGGER conversations_updated_at
+  BEFORE UPDATE ON conversations
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- ============================================
+-- MESSAGES TABLE
+-- Individual messages within a conversation
+-- ============================================
+CREATE TABLE IF NOT EXISTS messages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  
+  -- The conversation this message belongs to
+  conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+  
+  -- Who sent the message
+  sender_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  
+  -- Message content
+  content TEXT NOT NULL,
+  
+  -- Read status
+  is_read BOOLEAN NOT NULL DEFAULT false,
+  
+  -- Timestamps
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Indexes for messages
+CREATE INDEX IF NOT EXISTS messages_conversation_id_idx ON messages(conversation_id);
+CREATE INDEX IF NOT EXISTS messages_created_at_idx ON messages(created_at);
+
+-- Enable RLS
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+
+-- Policy: Users can view messages in their conversations
+CREATE POLICY "Users can view messages in their conversations"
+  ON messages
+  FOR SELECT
+  TO authenticated
+  USING (
+    conversation_id IN (
+      SELECT c.id FROM conversations c
+      LEFT JOIN jobs j ON c.job_id = j.id
+      WHERE c.worker_id = auth.uid() OR j.user_id = auth.uid()
+    )
+  );
+
+-- Policy: Users can send messages in their conversations
+CREATE POLICY "Users can send messages in their conversations"
+  ON messages
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    auth.uid() = sender_id AND
+    conversation_id IN (
+      SELECT c.id FROM conversations c
+      LEFT JOIN jobs j ON c.job_id = j.id
+      WHERE c.worker_id = auth.uid() OR j.user_id = auth.uid()
+    )
+  );
+
+-- Policy: Users can update their own messages (mark as read)
+CREATE POLICY "Users can update messages in their conversations"
+  ON messages
+  FOR UPDATE
+  TO authenticated
+  USING (
+    conversation_id IN (
+      SELECT c.id FROM conversations c
+      LEFT JOIN jobs j ON c.job_id = j.id
+      WHERE c.worker_id = auth.uid() OR j.user_id = auth.uid()
+    )
+  );
+
+-- ============================================
+-- VIEW: Messages with sender info
+-- ============================================
+CREATE OR REPLACE VIEW messages_with_sender AS
+SELECT 
+  m.id,
+  m.conversation_id,
+  m.sender_id,
+  m.content,
+  m.is_read,
+  m.created_at,
+  p.email AS sender_email,
+  p.full_name AS sender_name,
+  p.avatar_url AS sender_avatar
+FROM messages m
+LEFT JOIN profiles p ON m.sender_id = p.id;
+
+-- ============================================
+-- Enable Realtime for messages table
+-- This allows clients to subscribe to new messages
+-- ============================================
+ALTER PUBLICATION supabase_realtime ADD TABLE messages;

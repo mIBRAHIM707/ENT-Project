@@ -41,6 +41,7 @@ function extractRegNumber(email: string | null): string {
 interface JobRow {
   id: string;
   title: string;
+  description?: string | null;
   price: number;
   urgency: string;
   location: string;
@@ -68,9 +69,11 @@ export default async function Home() {
   const jobs = (jobsData || []).map((job: JobRow) => ({
     id: job.id,
     title: job.title,
+    description: job.description || "",
     price: job.price,
     urgency: job.urgency || "Flexible",
     location: job.location || "Campus",
+    userId: job.user_id || "",
     // Extract reg number from email (e.g., u2023446@giki.edu.pk -> 2023446)
     studentName: extractRegNumber(job.student_email),
     avatarUrl: job.avatar_url || 
