@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Trash2, 
@@ -75,7 +75,7 @@ export default function MyJobsPage() {
   const supabase = createClient();
 
   // Extract fetch logic into a reusable function
-  const fetchJobs = async (userId: string) => {
+  const fetchJobs = useCallback(async (userId: string) => {
     const { data: jobsData, error } = await supabase
       .from("jobs")
       .select("*")
@@ -103,7 +103,7 @@ export default function MyJobsPage() {
     );
 
     setJobs(jobsWithCounts);
-  };
+  }, [supabase]);
 
   useEffect(() => {
     async function fetchData() {
@@ -122,7 +122,7 @@ export default function MyJobsPage() {
     }
 
     fetchData();
-  }, [supabase]);
+  }, [supabase, fetchJobs]);
 
   // Handle successful job creation
   const handleJobCreated = async () => {
@@ -240,7 +240,7 @@ export default function MyJobsPage() {
                 <VisuallyHidden.Root>
                   <DialogTitle>Create a Task</DialogTitle>
                 </VisuallyHidden.Root>
-                <SmartPricingForm onSuccess={() => setCreateDialogOpen(false)} />
+                <SmartPricingForm onSuccess={handleJobCreated} />
               </DialogContent>
             </Dialog>
           </div>
@@ -284,13 +284,58 @@ export default function MyJobsPage() {
                 <VisuallyHidden.Root>
                   <DialogTitle>Create a Task</DialogTitle>
                 </VisuallyHidden.Root>
-                <SmartPricingForm onSuccess={() => setCreateDialogOpen(false)} />
+                <SmartPricingForm onSuccess={handleJobCreated} />
               </DialogContent>
             </Dialog>
           </motion.div>
         ) : (
           /* Job List */
-          <div className="space-y-3">
+          <div className="space-y-4">
+            {/* Post New Task CTA */}
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 dark:from-zinc-100 dark:via-white dark:to-zinc-100 rounded-2xl p-5 flex items-center justify-between shadow-xl"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-white/10 dark:bg-zinc-900/20 flex items-center justify-center">
+                  <Plus className="h-6 w-6 text-white dark:text-zinc-900" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white dark:text-zinc-900 text-[15px]">
+                    Need more help?
+                  </h3>
+                  <p className="text-zinc-400 dark:text-zinc-600 text-[13px]">
+                    Post another task and let the community assist you
+                  </p>
+                </div>
+              </div>
+              <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="px-5 py-2.5 rounded-xl bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white font-semibold text-[14px] hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shadow-lg"
+                  >
+                    Post New Task
+                  </motion.button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                  <VisuallyHidden.Root>
+                    <DialogTitle>Create a Task</DialogTitle>
+                  </VisuallyHidden.Root>
+                  <SmartPricingForm onSuccess={handleJobCreated} />
+                </DialogContent>
+              </Dialog>
+            </motion.div>
+
+            {/* Task Count */}
+            <div className="flex items-center justify-between px-1">
+              <p className="text-[13px] text-zinc-500 dark:text-zinc-400">
+                {jobs.length} active task{jobs.length !== 1 ? "s" : ""}
+              </p>
+            </div>
+
             <AnimatePresence mode="popLayout">
               {jobs.map((job, index) => (
                 <motion.div
