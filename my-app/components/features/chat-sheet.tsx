@@ -169,7 +169,7 @@ export function ChatSheet({
             .eq("conversation_id", conv.id)
             .order("created_at", { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
           const profile = profileMap.get(conv.worker_id);
           return {
@@ -200,7 +200,7 @@ export function ChatSheet({
         .select("id")
         .eq("job_id", job.id)
         .eq("worker_id", currentUserId)
-        .single();
+        .maybeSingle();
 
       if (data) {
         setActiveConversationId(data.id);
@@ -281,7 +281,7 @@ export function ChatSheet({
             .from("profiles")
             .select("email")
             .eq("id", payload.new.sender_id)
-            .single();
+            .maybeSingle();
 
           const newMsg: Message = {
             id: payload.new.id,
@@ -320,7 +320,7 @@ export function ChatSheet({
       .select("id")
       .eq("job_id", job.id)
       .eq("worker_id", currentUserId)
-      .single();
+      .maybeSingle();
 
     if (existing) {
       setActiveConversationId(existing.id);

@@ -43,7 +43,7 @@ export function UserMenu() {
         .from("profiles")
         .select("full_name, avatar_url")
         .eq("id", userId)
-        .single();
+        .maybeSingle();
       if (isMounted) {
         setProfile(data);
       }

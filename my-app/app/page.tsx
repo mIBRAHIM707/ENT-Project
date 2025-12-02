@@ -81,6 +81,7 @@ export default async function Home() {
         ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${job.user_id}`
         : "https://api.dicebear.com/7.x/avataaars/svg?seed=Guest"),
     timeAgo: job.created_at ? getTimeAgo(job.created_at) : "Recently",
+    createdAt: job.created_at || null,
   }));
 
   return <HomeClient jobs={jobs} />;

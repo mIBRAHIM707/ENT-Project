@@ -118,7 +118,7 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
           .from("profiles")
           .select("email, full_name")
           .eq("id", otherUserId)
-          .single();
+          .maybeSingle();
 
         const { data: messages, count } = await supabase
           .from("messages")
@@ -151,7 +151,7 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
     } finally {
       setLoadingConversations(false);
     }
-  }, [userId, supabase]);
+  }, [userId]);
 
   const fetchNotifications = useCallback(async () => {
     if (!userId) return;
@@ -190,14 +190,14 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
         .neq("sender_id", userId)
         .order("created_at", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (latestMessage) {
         const { data: senderProfile } = await supabase
           .from("profiles")
           .select("email, full_name")
           .eq("id", latestMessage.sender_id)
-          .single();
+          .maybeSingle();
 
         const job = conv.jobs as unknown as { id: string; title: string; user_id: string };
 
@@ -220,7 +220,7 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
     notifs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     setNotifications(notifs);
     setUnreadCount(notifs.length);
-  }, [userId, supabase]);
+  }, [userId]);
 
   useEffect(() => {
     fetchNotifications();
@@ -242,7 +242,7 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
               .from("conversations")
               .select(`id, job_id, worker_id, jobs (id, title, user_id)`)
               .eq("id", payload.new.conversation_id)
-              .single();
+              .maybeSingle();
 
             if (!conv) return;
 
@@ -255,7 +255,7 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
                 .from("profiles")
                 .select("email, full_name")
                 .eq("id", payload.new.sender_id)
-                .single();
+                .maybeSingle();
 
               const newNotif: Notification = {
                 id: payload.new.id,
@@ -284,7 +284,7 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
 
     setupRealtime();
     return () => { if (channel) supabase.removeChannel(channel); };
-  }, [userId, supabase]);
+  }, [userId]);
 
   const handleNotificationClick = (notif: Notification) => {
     if (onOpenChat) onOpenChat(notif.jobId, notif.conversationId);

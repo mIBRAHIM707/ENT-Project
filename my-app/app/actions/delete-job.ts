@@ -20,7 +20,7 @@ export async function deleteJob(jobId: string): Promise<{ success: boolean; erro
       .from("jobs")
       .select("id, user_id")
       .eq("id", jobId)
-      .single();
+      .maybeSingle();
 
     if (fetchError || !job) {
       return { success: false, error: "Job not found" };

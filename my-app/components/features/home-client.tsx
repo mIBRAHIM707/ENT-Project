@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, Utensils, BookOpen, Laptop, Car, Sparkles } from "lucide-react";
-import { JobCard } from "@/components/features/job-card";
+import { Plus, Search, Utensils, BookOpen, Laptop, Car, ClipboardList } from "lucide-react";
+import { JobCard, JobCardSkeleton } from "@/components/features/job-card";
 import { SmartPricingForm } from "@/components/features/smart-pricing-form";
 import { ChatSheet } from "@/components/features/chat-sheet";
 import { NotificationsPopover } from "@/components/features/notifications-popover";
@@ -34,6 +34,7 @@ interface Job {
   studentName: string;
   avatarUrl: string;
   timeAgo: string;
+  createdAt?: string | null;
 }
 
 interface HomeClientProps {
@@ -151,7 +152,7 @@ export function HomeClient({ jobs }: HomeClientProps) {
         .from("jobs")
         .select("*, profiles!jobs_user_id_fkey(email)")
         .eq("id", jobId)
-        .single();
+        .maybeSingle();
       
       if (jobData) {
         const email = jobData.profiles?.email || "";
@@ -420,35 +421,36 @@ export function HomeClient({ jobs }: HomeClientProps) {
                       avatarUrl={job.avatarUrl}
                       studentName={job.studentName}
                       timeAgo={job.timeAgo}
+                      createdAt={job.createdAt}
                       onClick={() => handleJobClick(job)}
                     />
                   </motion.div>
                 ))}
               </div>
             ) : (
-              /* Empty State */
+              /* Empty State - Premium */
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col items-center justify-center py-20 text-center"
+                className="flex flex-col items-center justify-center py-24 text-center"
               >
-                <div className="relative mb-6">
-                  {/* Glow */}
-                  <div className="absolute inset-0 w-24 h-24 bg-emerald-500/20 blur-2xl rounded-full" />
-                  <div className="relative w-24 h-24 rounded-3xl bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900 flex items-center justify-center border border-zinc-200 dark:border-zinc-700">
-                    <Sparkles className="w-10 h-10 text-emerald-500" />
+                <div className="relative mb-8">
+                  {/* Circular gradient glow */}
+                  <div className="absolute inset-0 w-28 h-28 bg-gradient-to-br from-emerald-500/30 to-teal-500/20 blur-2xl rounded-full scale-150" />
+                  <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/50 dark:to-teal-950/50 flex items-center justify-center border border-emerald-200/50 dark:border-emerald-800/30 shadow-xl shadow-emerald-500/10">
+                    <ClipboardList className="w-12 h-12 text-emerald-500" />
                   </div>
                 </div>
-                <h4 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white mb-2">
-                  No tasks yet
+                <h4 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white mb-3">
+                  Campus is quiet right now.
                 </h4>
-                <p className="text-zinc-500 dark:text-zinc-400 mb-6 max-w-sm">
-                  Be the first to post a task and get help from fellow students!
+                <p className="text-zinc-500 dark:text-zinc-400 mb-8 max-w-md text-lg">
+                  Be the first to post a task and start the economy.
                 </p>
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6 h-12 font-semibold shadow-lg shadow-emerald-500/25">
-                      <Plus className="w-4 h-4 mr-2" />
+                    <Button className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl px-8 h-14 text-base font-semibold shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300">
+                      <Plus className="w-5 h-5 mr-2" />
                       Post First Task
                     </Button>
                   </DialogTrigger>

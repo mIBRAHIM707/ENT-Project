@@ -17,7 +17,7 @@ export default async function ProfilePage() {
     .from("profiles")
     .select("*")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   // Count tasks posted by user
   const { count: tasksPosted } = await supabase
