@@ -197,20 +197,20 @@ export function SearchFilterBar({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Main Search Bar - Apple Style */}
-      <div className="flex gap-3">
-        {/* Search Input */}
-        <div className="flex-1 relative group">
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
+    <div className="space-y-3">
+      {/* Main Search Bar - Premium Centered Design */}
+      <div className="flex items-center justify-center gap-2 sm:gap-3">
+        {/* Search Input - Constrained Width */}
+        <div className="relative group flex-1 max-w-md">
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-full blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
           <div className="relative flex items-center">
-            <Search className="absolute left-4 h-5 w-5 text-zinc-400 pointer-events-none" />
+            <Search className="absolute left-4 h-4 w-4 text-zinc-400 pointer-events-none" />
             <Input
               type="text"
               placeholder="Search tasks..."
               value={filters.search}
               onChange={(e) => updateFilter("search", e.target.value)}
-              className="w-full h-14 pl-12 pr-12 rounded-2xl bg-zinc-100/80 dark:bg-zinc-900/80 backdrop-blur-xl border-0 ring-1 ring-zinc-200/50 dark:ring-zinc-800/50 focus-visible:ring-2 focus-visible:ring-emerald-500/50 text-base placeholder:text-zinc-400 transition-all duration-300"
+              className="w-full h-11 pl-11 pr-10 rounded-full bg-white/80 dark:bg-zinc-800/80 backdrop-blur-xl border-0 shadow-sm shadow-black/5 ring-1 ring-zinc-200/80 dark:ring-zinc-700/50 focus-visible:ring-2 focus-visible:ring-emerald-500/50 text-sm placeholder:text-zinc-400 transition-all duration-300"
             />
             <AnimatePresence>
               {filters.search && (
@@ -219,24 +219,27 @@ export function SearchFilterBar({
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
                   onClick={() => updateFilter("search", "")}
-                  className="absolute right-4 w-6 h-6 rounded-full bg-zinc-300 dark:bg-zinc-700 flex items-center justify-center hover:bg-zinc-400 dark:hover:bg-zinc-600 transition-colors"
+                  className="absolute right-3 w-5 h-5 rounded-full bg-zinc-200 dark:bg-zinc-600 flex items-center justify-center hover:bg-zinc-300 dark:hover:bg-zinc-500 transition-colors"
                 >
-                  <X className="h-3 w-3 text-zinc-600 dark:text-zinc-300" />
+                  <X className="h-3 w-3 text-zinc-500 dark:text-zinc-300" />
                 </motion.button>
               )}
             </AnimatePresence>
           </div>
         </div>
 
-        {/* Sort Dropdown - Minimal */}
+        {/* Divider */}
+        <div className="hidden sm:block w-px h-6 bg-zinc-200 dark:bg-zinc-700" />
+
+        {/* Sort Dropdown - Compact */}
         <Select value={filters.sortBy} onValueChange={(v) => updateFilter("sortBy", v)}>
-          <SelectTrigger className="w-[160px] h-14 rounded-2xl bg-zinc-100/80 dark:bg-zinc-900/80 backdrop-blur-xl border-0 ring-1 ring-zinc-200/50 dark:ring-zinc-800/50 hover:ring-zinc-300 dark:hover:ring-zinc-700 transition-all">
-            <div className="flex items-center gap-2">
-              <ArrowUpDown className="h-4 w-4 text-zinc-400" />
-              <span className="text-zinc-600 dark:text-zinc-300">{SORT_OPTIONS.find(o => o.value === filters.sortBy)?.label || "Sort"}</span>
-            </div>
+          <SelectTrigger className="w-auto h-11 px-4 rounded-full bg-white/80 dark:bg-zinc-800/80 backdrop-blur-xl border-0 shadow-sm shadow-black/5 ring-1 ring-zinc-200/80 dark:ring-zinc-700/50 hover:ring-zinc-300 dark:hover:ring-zinc-600 transition-all gap-2">
+            <ArrowUpDown className="h-4 w-4 text-zinc-400" />
+            <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300 hidden sm:inline">
+              {SORT_OPTIONS.find(o => o.value === filters.sortBy)?.label || "Sort"}
+            </span>
           </SelectTrigger>
-          <SelectContent className="rounded-2xl border-0 shadow-2xl shadow-black/20 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl">
+          <SelectContent className="rounded-2xl border-0 shadow-2xl shadow-black/20 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl min-w-[160px]">
             {SORT_OPTIONS.map((option) => (
               <SelectItem 
                 key={option.value} 
@@ -249,23 +252,23 @@ export function SearchFilterBar({
           </SelectContent>
         </Select>
 
-        {/* Filters Button - Premium */}
+        {/* Filters Button - Compact Pill */}
         <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
           <SheetTrigger asChild>
             <Button
               variant="ghost"
               className={`
-                h-14 px-5 rounded-2xl transition-all duration-300
+                h-11 px-4 rounded-full transition-all duration-300 gap-2
                 ${activeFilterCount > 0 
-                  ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/25" 
-                  : "bg-zinc-100/80 dark:bg-zinc-900/80 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/80 ring-1 ring-zinc-200/50 dark:ring-zinc-800/50"
+                  ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-500/20" 
+                  : "bg-white/80 dark:bg-zinc-800/80 hover:bg-zinc-100 dark:hover:bg-zinc-700/80 shadow-sm shadow-black/5 ring-1 ring-zinc-200/80 dark:ring-zinc-700/50"
                 }
               `}
             >
-              <SlidersHorizontal className="h-4 w-4 mr-2" />
-              <span className="font-medium">Filters</span>
+              <SlidersHorizontal className="h-4 w-4" />
+              <span className="text-sm font-medium hidden sm:inline">Filters</span>
               {activeFilterCount > 0 && (
-                <span className="ml-2 px-2 py-0.5 rounded-full bg-white/20 text-xs font-bold">
+                <span className="min-w-5 h-5 px-1.5 rounded-full bg-white/20 text-xs font-bold flex items-center justify-center">
                   {activeFilterCount}
                 </span>
               )}

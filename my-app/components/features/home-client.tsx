@@ -327,12 +327,11 @@ export function HomeClient({ jobs }: HomeClientProps) {
               />
             ) : (
               /* Skeleton placeholder to prevent layout shift */
-              <div className="space-y-4 animate-pulse">
-                <div className="flex gap-3">
-                  <div className="flex-1 h-14 bg-zinc-200 dark:bg-zinc-800 rounded-2xl" />
-                  <div className="w-[160px] h-14 bg-zinc-200 dark:bg-zinc-800 rounded-2xl" />
-                  <div className="w-28 h-14 bg-zinc-200 dark:bg-zinc-800 rounded-2xl" />
-                </div>
+              <div className="flex items-center justify-center gap-2 sm:gap-3 animate-pulse">
+                <div className="flex-1 max-w-md h-11 bg-zinc-200 dark:bg-zinc-800 rounded-full" />
+                <div className="hidden sm:block w-px h-6 bg-zinc-200 dark:bg-zinc-700" />
+                <div className="w-24 h-11 bg-zinc-200 dark:bg-zinc-800 rounded-full" />
+                <div className="w-24 h-11 bg-zinc-200 dark:bg-zinc-800 rounded-full" />
               </div>
             )}
           </motion.div>
