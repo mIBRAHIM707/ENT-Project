@@ -22,36 +22,43 @@ interface Profile {
   avatar_url: string | null;
 }
 
+// Create a single instance outside the component to prevent re-creation
+const supabase = createClient();
+
 export function UserMenu() {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
-
-  // Fetch profile data
-  const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("full_name, avatar_url")
-      .eq("id", userId)
-      .single();
-    setProfile(data);
-  };
 
   // Get user on mount and listen for auth changes
   useEffect(() => {
     setMounted(true);
+    let isMounted = true;
+
+    // Fetch profile data
+    const fetchProfile = async (userId: string) => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, avatar_url")
+        .eq("id", userId)
+        .single();
+      if (isMounted) {
+        setProfile(data);
+      }
+    };
 
     // Get initial user
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      if (user) {
-        await fetchProfile(user.id);
+      if (isMounted) {
+        setUser(user);
+        if (user) {
+          await fetchProfile(user.id);
+        }
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     getUser();
@@ -59,20 +66,23 @@ export function UserMenu() {
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-        } else {
-          setProfile(null);
+        if (isMounted) {
+          setUser(session?.user ?? null);
+          if (session?.user) {
+            await fetchProfile(session.user.id);
+          } else {
+            setProfile(null);
+          }
+          setLoading(false);
         }
-        setLoading(false);
       }
     );
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
-  }, [supabase.auth]);
+  }, []);
 
   // Handle logout
   const handleLogout = async () => {

@@ -33,6 +33,9 @@ import { UserMenu } from "@/components/auth/user-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
 import Link from "next/link";
 
+// Create a single instance outside the component to prevent re-creation
+const supabase = createClient();
+
 interface Job {
   id: string;
   title: string;
@@ -71,8 +74,6 @@ export default function MyJobsPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [chatSheetOpen, setChatSheetOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-
-  const supabase = createClient();
 
   // Extract fetch logic into a reusable function
   const fetchJobs = useCallback(async (userId: string) => {

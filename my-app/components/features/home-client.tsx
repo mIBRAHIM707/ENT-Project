@@ -19,6 +19,9 @@ import {
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { createClient } from "@/utils/supabase/client";
 
+// Create a single instance outside the component to prevent re-creation
+const supabase = createClient();
+
 // Job type from database
 interface Job {
   id: string;
@@ -100,8 +103,6 @@ export function HomeClient({ jobs }: HomeClientProps) {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
 
-  const supabase = createClient();
-
   // Prevent hydration mismatch with Radix UI dialogs
   useEffect(() => {
     setMounted(true);
@@ -123,7 +124,7 @@ export function HomeClient({ jobs }: HomeClientProps) {
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase.auth]);
+  }, []);
 
   // Handle job card click
   const handleJobClick = (job: Job) => {
@@ -172,7 +173,7 @@ export function HomeClient({ jobs }: HomeClientProps) {
         setChatSheetOpen(true);
       }
     }
-  }, [jobs, supabase]);
+  }, [jobs]);
 
   return (
     <div className="relative min-h-screen">

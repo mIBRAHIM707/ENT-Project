@@ -7,6 +7,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { createClient } from "@/utils/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
+// Create a single instance outside the component to prevent re-creation
+const supabase = createClient();
+
 interface Notification {
   id: string;
   type: "message";
@@ -74,7 +77,6 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
   const [conversations, setConversations] = useState<ConversationThread[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loadingConversations, setLoadingConversations] = useState(false);
-  const supabase = createClient();
 
   const fetchConversations = useCallback(async () => {
     if (!userId) return;

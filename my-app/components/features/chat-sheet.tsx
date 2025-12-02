@@ -25,6 +25,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { createClient } from "@/utils/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
+// Create a single instance outside the component to prevent re-creation
+const supabase = createClient();
+
 // Types
 interface Job {
   id: string;
@@ -100,7 +103,6 @@ export function ChatSheet({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
-  const supabase = createClient();
 
   const isOwner = currentUserId === job?.userId;
 
@@ -186,7 +188,7 @@ export function ChatSheet({
     };
 
     fetchApplicants();
-  }, [isOpen, job, currentUserId, isOwner, supabase]);
+  }, [isOpen, job, currentUserId, isOwner]);
 
   // Check for existing conversation when sheet opens (for non-owners)
   useEffect(() => {
@@ -206,7 +208,7 @@ export function ChatSheet({
     };
 
     checkExistingConversation();
-  }, [isOpen, job, currentUserId, isOwner, supabase]);
+  }, [isOpen, job, currentUserId, isOwner]);
 
   // Fetch messages when conversation is active
   useEffect(() => {
@@ -304,7 +306,7 @@ export function ChatSheet({
         supabase.removeChannel(channelRef.current);
       }
     };
-  }, [activeConversationId, currentUserId, supabase]);
+  }, [activeConversationId, currentUserId]);
 
   // Start a new conversation
   const handleStartChat = async () => {
