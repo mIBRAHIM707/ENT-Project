@@ -119,7 +119,135 @@
   :root {
     --radius: 1rem; /* rounded-2xl */
   }
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(120, 120, 128, 0.2) transparent;
+  }
+  html::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  html::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  html::-webkit-scrollbar-thumb {
+    background: rgba(120, 120, 128, 0.2);
+    border-radius: 100px;
+  }
+  html::-webkit-scrollbar-thumb:hover {
+    background: rgba(120, 120, 128, 0.4);
+  }
+  .dark html, 
+  html.dark {
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  }
+  .dark html::-webkit-scrollbar-thumb,
+  html.dark::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .dark html::-webkit-scrollbar-thumb:hover,
+  html.dark::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
   body {
     @apply antialiased selection:bg-emerald-500/30 selection:text-emerald-900;
+  }
+}
+
+/* Premium Apple/Spotify-inspired Scrollbar */
+@layer utilities {
+  /* Hide scrollbar by default, show on hover - Apple style */
+  .scrollbar-premium {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.3s ease;
+  }
+  
+  .scrollbar-premium:hover {
+    scrollbar-color: rgba(120, 120, 128, 0.4) transparent;
+  }
+  
+  .dark .scrollbar-premium:hover {
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
+
+  /* Webkit scrollbar styling */
+  .scrollbar-premium::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-premium::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 100px;
+  }
+
+  .scrollbar-premium::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 100px;
+    border: 2px solid transparent;
+    transition: background 0.3s ease;
+  }
+
+  .scrollbar-premium:hover::-webkit-scrollbar-thumb {
+    background: rgba(120, 120, 128, 0.4);
+  }
+
+  .dark .scrollbar-premium:hover::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .scrollbar-premium::-webkit-scrollbar-thumb:hover {
+    background: rgba(120, 120, 128, 0.6);
+  }
+
+  .dark .scrollbar-premium::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.35);
+  }
+
+  /* Always visible but subtle - Spotify style */
+  .scrollbar-subtle {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(120, 120, 128, 0.2) transparent;
+  }
+
+  .dark .scrollbar-subtle {
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  }
+
+  .scrollbar-subtle::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-subtle::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-subtle::-webkit-scrollbar-thumb {
+    background: rgba(120, 120, 128, 0.2);
+    border-radius: 100px;
+  }
+
+  .dark .scrollbar-subtle::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .scrollbar-subtle::-webkit-scrollbar-thumb:hover {
+    background: rgba(120, 120, 128, 0.4);
+  }
+
+  .dark .scrollbar-subtle::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  /* Hide scrollbar completely */
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
   }
 }

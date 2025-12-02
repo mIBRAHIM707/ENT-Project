@@ -418,190 +418,249 @@ export function ChatSheet({
         <div className="flex-1 overflow-hidden flex flex-col">
           <AnimatePresence mode="wait">
             {!activeConversationId ? (
-              /* Job Details View - Premium Design */
+              /* Job Details View - Apple/Spotify Premium Design */
               <motion.div
                 key="details"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="flex-1 p-5 overflow-y-auto"
+                transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                className="flex-1 overflow-y-auto scrollbar-premium"
               >
-                {/* Hero Price Section */}
-                <div className="relative mb-8">
-                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-3xl blur-2xl" />
-                  <div className="relative text-center py-8 px-6 rounded-3xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-700/50 shadow-xl shadow-zinc-200/50 dark:shadow-zinc-950/50">
-                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2">Budget</p>
-                    <div className="inline-flex items-baseline gap-1">
-                      <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Rs.</span>
-                      <span className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">
-                        {job.price.toLocaleString()}
-                      </span>
-                    </div>
+                {/* Hero Section - Spotify Album Art Style */}
+                <div className="relative px-6 pt-6 pb-8">
+                  {/* Ambient Glow Background */}
+                  <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[300px] h-[200px] bg-gradient-to-b from-emerald-500/30 via-emerald-500/10 to-transparent blur-3xl" />
+                  </div>
+                  
+                  {/* Price Hero - Centered like Spotify's now playing */}
+                  <div className="relative">
+                    <motion.div 
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.1, duration: 0.4 }}
+                      className="text-center"
+                    >
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/20 mb-4">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Budget</span>
+                      </div>
+                      <div className="flex items-baseline justify-center gap-1">
+                        <span className="text-lg font-medium text-zinc-400 dark:text-zinc-500">Rs.</span>
+                        <span className="text-6xl font-bold tracking-tight text-zinc-900 dark:text-white">
+                          {job.price.toLocaleString()}
+                        </span>
+                      </div>
+                    </motion.div>
                   </div>
                 </div>
 
-                {/* Job Info Cards */}
-                <div className="space-y-4">
-                  {/* Poster Card */}
-                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-700/30 shadow-lg shadow-zinc-200/30 dark:shadow-zinc-950/30">
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl blur-sm opacity-50" />
-                      <Avatar className="relative h-14 w-14 rounded-xl border-2 border-white dark:border-zinc-700 shadow-lg">
-                        <AvatarImage src={job.avatarUrl} className="rounded-xl" />
-                        <AvatarFallback className="rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white font-semibold">
-                          {job.studentName.slice(0, 2)}
-                        </AvatarFallback>
-                      </Avatar>
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-zinc-900 dark:text-white tracking-tight">
-                        {job.studentName}
-                      </p>
-                      <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                        Task Owner
-                      </p>
-                    </div>
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20">
-                      <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                    </div>
-                  </div>
-
-                  {/* Details Grid */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-4 rounded-2xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-700/30 shadow-lg shadow-zinc-200/30 dark:shadow-zinc-950/30">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/20 mb-3">
-                        <MapPin className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                {/* Content Section */}
+                <div className="px-5 pb-6 space-y-4">
+                  {/* Task Owner - Apple Contact Card Style */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15 }}
+                    className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-100 to-zinc-50 dark:from-zinc-800/80 dark:to-zinc-900/80"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent" />
+                    <div className="relative flex items-center gap-4 p-4">
+                      <div className="relative">
+                        <Avatar className="h-14 w-14 rounded-2xl ring-2 ring-white dark:ring-zinc-700 shadow-xl">
+                          <AvatarImage src={job.avatarUrl} className="rounded-2xl" />
+                          <AvatarFallback className="rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white font-bold text-lg">
+                            {job.studentName.slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
+                        {/* Online indicator */}
+                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+                          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/30" />
+                        </div>
                       </div>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-0.5">Location</p>
-                      <p className="font-medium text-zinc-900 dark:text-white">{job.location}</p>
-                    </div>
-                    <div className="p-4 rounded-2xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-700/30 shadow-lg shadow-zinc-200/30 dark:shadow-zinc-950/30">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-500/20 mb-3">
-                        <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-zinc-900 dark:text-white text-lg tracking-tight">
+                          {job.studentName}
+                        </p>
+                        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                          Task Owner
+                        </p>
                       </div>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-0.5">Urgency</p>
-                      <p className="font-medium text-zinc-900 dark:text-white">{job.urgency}</p>
+                      <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20">
+                        <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Active</span>
+                      </div>
                     </div>
-                  </div>
+                  </motion.div>
 
-                  {/* Description */}
+                  {/* Info Pills - Apple Style Horizontal Scroll Look */}
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="flex gap-3"
+                  >
+                    {/* Location Pill */}
+                    <div className="flex-1 p-4 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50/50 dark:from-blue-500/10 dark:to-indigo-500/5 border border-blue-100/50 dark:border-blue-500/10">
+                      <div className="flex items-center gap-2.5 mb-2">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-blue-500/15 dark:bg-blue-500/20">
+                          <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <span className="text-[11px] font-semibold text-blue-600/70 dark:text-blue-400/70 uppercase tracking-wider">Location</span>
+                      </div>
+                      <p className="font-semibold text-zinc-900 dark:text-white pl-0.5">{job.location}</p>
+                    </div>
+
+                    {/* Urgency Pill */}
+                    <div className="flex-1 p-4 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50/50 dark:from-amber-500/10 dark:to-orange-500/5 border border-amber-100/50 dark:border-amber-500/10">
+                      <div className="flex items-center gap-2.5 mb-2">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-amber-500/15 dark:bg-amber-500/20">
+                          <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <span className="text-[11px] font-semibold text-amber-600/70 dark:text-amber-400/70 uppercase tracking-wider">Urgency</span>
+                      </div>
+                      <p className="font-semibold text-zinc-900 dark:text-white pl-0.5">{job.urgency}</p>
+                    </div>
+                  </motion.div>
+
+                  {/* Description - Apple Notes Style */}
                   {job.description && (
-                    <div className="p-5 rounded-2xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-700/30 shadow-lg shadow-zinc-200/30 dark:shadow-zinc-950/30">
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-2">About this task</p>
-                      <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.25 }}
+                      className="p-5 rounded-2xl bg-zinc-100/80 dark:bg-zinc-800/50"
+                    >
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-1 h-4 rounded-full bg-gradient-to-b from-emerald-400 to-teal-500" />
+                        <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">About this task</span>
+                      </div>
+                      <p className="text-[15px] text-zinc-700 dark:text-zinc-300 leading-relaxed">
                         {job.description}
                       </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Action Section */}
-                <div className="mt-8 space-y-4">
-                  {!currentUserId ? (
-                    <div className="text-center p-8 rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-700/30 shadow-xl">
-                      <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-zinc-200 dark:bg-zinc-700 mx-auto mb-4">
-                        <User className="h-8 w-8 text-zinc-500 dark:text-zinc-400" />
-                      </div>
-                      <p className="text-zinc-900 dark:text-white font-medium mb-1">Sign in to apply</p>
-                      <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-4">
-                        Connect with the task owner
-                      </p>
-                      <Button 
-                        className="rounded-full px-8 h-11 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100 font-medium shadow-lg"
-                        onClick={() => window.location.href = "/login"}
-                      >
-                        Sign In
-                      </Button>
-                    </div>
-                  ) : isOwner ? (
-                    <div className="space-y-4">
-                      {isLoadingApplicants ? (
-                        <div className="flex items-center justify-center p-8">
-                          <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
-                        </div>
-                      ) : applicants.length === 0 ? (
-                        <div className="text-center p-8 rounded-3xl bg-gradient-to-br from-amber-50/80 to-orange-50/50 dark:from-amber-500/10 dark:to-orange-500/5 backdrop-blur-sm border border-amber-200/50 dark:border-amber-500/20 shadow-xl">
-                          <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-500/20 mx-auto mb-4">
-                            <MessageCircle className="h-8 w-8 text-amber-600 dark:text-amber-400" />
-                          </div>
-                          <p className="text-amber-900 dark:text-amber-300 font-medium mb-1">Your Task</p>
-                          <p className="text-amber-700/80 dark:text-amber-400/60 text-sm">
-                            Waiting for applicants to reach out...
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2 mb-4">
-                            <Users className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                            <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                              {applicants.length} Applicant{applicants.length > 1 ? "s" : ""}
-                            </p>
-                          </div>
-                          {applicants.map((applicant) => (
-                            <motion.div
-                              key={applicant.conversationId}
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                            >
-                              <button
-                                onClick={() => {
-                                  setActiveConversationId(applicant.conversationId);
-                                  setOtherUserEmail(applicant.workerEmail);
-                                }}
-                                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-700/30 hover:border-emerald-300 dark:hover:border-emerald-600/50 transition-all shadow-lg hover:shadow-xl text-left"
-                              >
-                                <Avatar className="h-12 w-12 rounded-xl border-2 border-white dark:border-zinc-700 shadow">
-                                  <AvatarImage 
-                                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${applicant.workerId}`} 
-                                    className="rounded-xl"
-                                  />
-                                  <AvatarFallback className="rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white font-semibold text-sm">
-                                    {extractRegNumber(applicant.workerEmail).slice(0, 2)}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-semibold text-zinc-900 dark:text-white">
-                                    {extractRegNumber(applicant.workerEmail)}
-                                  </p>
-                                  {applicant.lastMessage ? (
-                                    <p className="text-sm text-zinc-500 dark:text-zinc-400 truncate">
-                                      {applicant.lastMessage}
-                                    </p>
-                                  ) : (
-                                    <p className="text-sm text-zinc-400 dark:text-zinc-500 italic">
-                                      No messages yet
-                                    </p>
-                                  )}
-                                </div>
-                                <ChevronRight className="h-5 w-5 text-zinc-400" />
-                              </button>
-                            </motion.div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <motion.div
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <Button
-                        onClick={handleStartChat}
-                        disabled={isLoading}
-                        className="w-full h-14 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold text-lg shadow-xl shadow-emerald-500/30 border-0"
-                      >
-                        {isLoading ? (
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                        ) : (
-                          <>
-                            <MessageCircle className="mr-2 h-5 w-5" />
-                            Start Conversation
-                          </>
-                        )}
-                      </Button>
                     </motion.div>
                   )}
+
+                  {/* Applicants Section - Spotify Artist Followers Style */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    {!currentUserId ? (
+                      <div className="text-center py-10 px-6">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 mb-4">
+                          <User className="h-7 w-7 text-zinc-400" />
+                        </div>
+                        <p className="text-zinc-900 dark:text-white font-semibold mb-1">Sign in to apply</p>
+                        <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-5">
+                          Connect with the task owner
+                        </p>
+                        <Button 
+                          className="rounded-full px-8 h-12 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700 font-semibold shadow-sm"
+                          onClick={() => window.location.href = "/login"}
+                        >
+                          Sign In
+                        </Button>
+                      </div>
+                    ) : isOwner ? (
+                      <div className="space-y-3">
+                        {isLoadingApplicants ? (
+                          <div className="flex items-center justify-center py-10">
+                            <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
+                          </div>
+                        ) : applicants.length === 0 ? (
+                          <div className="text-center py-10 px-6 rounded-2xl bg-gradient-to-br from-zinc-100 to-zinc-50 dark:from-zinc-800/50 dark:to-zinc-900/50">
+                            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-amber-100 dark:bg-amber-500/20 mb-4">
+                              <MessageCircle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                            </div>
+                            <p className="text-zinc-900 dark:text-white font-semibold mb-1">No applicants yet</p>
+                            <p className="text-zinc-500 dark:text-zinc-400 text-sm">
+                              Waiting for someone to reach out...
+                            </p>
+                          </div>
+                        ) : (
+                          <>
+                            {/* Section Header */}
+                            <div className="flex items-center justify-between px-1 mb-2">
+                              <div className="flex items-center gap-2">
+                                <Users className="h-4 w-4 text-emerald-500" />
+                                <span className="text-sm font-semibold text-zinc-900 dark:text-white">
+                                  {applicants.length} Applicant{applicants.length > 1 ? "s" : ""}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            {/* Applicant Cards */}
+                            <div className="space-y-2">
+                              {applicants.map((applicant, index) => (
+                                <motion.button
+                                  key={applicant.conversationId}
+                                  initial={{ opacity: 0, x: -10 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ delay: 0.1 * index }}
+                                  whileHover={{ x: 4 }}
+                                  whileTap={{ scale: 0.98 }}
+                                  onClick={() => {
+                                    setActiveConversationId(applicant.conversationId);
+                                    setOtherUserEmail(applicant.workerEmail);
+                                  }}
+                                  className="w-full flex items-center gap-3.5 p-3.5 rounded-2xl bg-zinc-100/80 dark:bg-zinc-800/50 hover:bg-zinc-200/80 dark:hover:bg-zinc-800 transition-colors text-left group"
+                                >
+                                  <Avatar className="h-11 w-11 rounded-xl ring-2 ring-white dark:ring-zinc-700 shadow-md">
+                                    <AvatarImage 
+                                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${applicant.workerId}`} 
+                                      className="rounded-xl"
+                                    />
+                                    <AvatarFallback className="rounded-xl bg-gradient-to-br from-violet-400 to-purple-500 text-white font-bold text-sm">
+                                      {extractRegNumber(applicant.workerEmail).slice(0, 2)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-zinc-900 dark:text-white">
+                                      {extractRegNumber(applicant.workerEmail)}
+                                    </p>
+                                    <p className="text-sm text-zinc-500 dark:text-zinc-400 truncate">
+                                      {applicant.lastMessage || "Tap to start chatting"}
+                                    </p>
+                                  </div>
+                                  <ChevronRight className="h-5 w-5 text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-400 dark:group-hover:text-zinc-500 transition-colors" />
+                                </motion.button>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      /* Apply Button - Spotify Play Button Style */
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.35 }}
+                        className="pt-2"
+                      >
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={handleStartChat}
+                          disabled={isLoading}
+                          className="w-full h-14 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-base shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                        >
+                          {isLoading ? (
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                          ) : (
+                            <>
+                              <MessageCircle className="h-5 w-5" />
+                              Apply for this Task
+                            </>
+                          )}
+                        </motion.button>
+                        <p className="text-center text-xs text-zinc-400 dark:text-zinc-500 mt-3">
+                          Start a conversation with the owner
+                        </p>
+                      </motion.div>
+                    )}
+                  </motion.div>
                 </div>
               </motion.div>
             ) : (
@@ -616,7 +675,7 @@ export function ChatSheet({
                 {/* Messages Container with Mesh Gradient Background */}
                 <div 
                   ref={messagesContainerRef}
-                  className="flex-1 overflow-y-auto px-4 pt-4 pb-28"
+                  className="flex-1 overflow-y-auto px-4 pt-4 pb-28 scrollbar-premium"
                   style={{
                     background: 'radial-gradient(ellipse at top, rgba(16, 185, 129, 0.03) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(20, 184, 166, 0.03) 0%, transparent 50%)'
                   }}
