@@ -60,7 +60,7 @@ interface ChatSheetProps {
   isOpen: boolean;
   onClose: () => void;
   currentUserId: string | null;
-  currentUserEmail: string | null; // Available for future features
+  currentUserEmail: string | null;
 }
 
 // Helper to extract reg number
@@ -68,6 +68,12 @@ function extractRegNumber(email: string | null | undefined): string {
   if (!email) return "User";
   const match = email.match(/[a-z]?(\d+)@/i);
   return match ? match[1] : "User";
+}
+
+// Format time for messages
+function formatMessageTime(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 export function ChatSheet({ 
@@ -85,6 +91,7 @@ export function ChatSheet({
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [isLoadingApplicants, setIsLoadingApplicants] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const supabase = createClient();
 
@@ -92,11 +99,17 @@ export function ChatSheet({
 
   // Scroll to bottom when messages change
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: "smooth"
+      });
+    }
   }, []);
 
   useEffect(() => {
-    scrollToBottom();
+    const timer = setTimeout(scrollToBottom, 100);
+    return () => clearTimeout(timer);
   }, [messages, scrollToBottom]);
 
   // Reset state when sheet closes or job changes
@@ -355,27 +368,43 @@ export function ChatSheet({
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <SheetContent 
         side="right" 
-        className="w-full sm:max-w-md p-0 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border-zinc-200/50 dark:border-zinc-800/50 flex flex-col"
+        className="w-full sm:max-w-md p-0 bg-zinc-50 dark:bg-zinc-950 border-0 flex flex-col overflow-hidden"
       >
-        {/* Premium Header */}
-        <SheetHeader className="p-5 border-b border-zinc-200/50 dark:border-zinc-800/50 bg-gradient-to-b from-white to-zinc-50/50 dark:from-zinc-900 dark:to-zinc-900/50">
+        {/* World-Class Glassmorphic Header */}
+        <SheetHeader className="sticky top-0 z-10 px-5 py-4 border-b border-zinc-200/30 dark:border-zinc-800/30 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl">
           <div className="flex items-center gap-3">
             {activeConversationId && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 -ml-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                onClick={() => setActiveConversationId(null)}
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
               >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 -ml-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                  onClick={() => setActiveConversationId(null)}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              </motion.div>
             )}
             <div className="flex-1 min-w-0">
-              <SheetTitle className="text-lg font-semibold text-zinc-900 dark:text-white truncate tracking-tight">
-                {activeConversationId 
-                  ? `Chat with ${isOwner ? extractRegNumber(otherUserEmail) : job.studentName}` 
-                  : job.title}
-              </SheetTitle>
+              <div className="flex items-center gap-2">
+                <SheetTitle className="text-lg font-semibold text-zinc-900 dark:text-white truncate tracking-tight">
+                  {activeConversationId 
+                    ? `${isOwner ? extractRegNumber(otherUserEmail) : job.studentName}` 
+                    : job.title}
+                </SheetTitle>
+                {activeConversationId && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Online</span>
+                  </div>
+                )}
+              </div>
               {!activeConversationId && (
                 <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
                   Posted by {job.studentName}
@@ -401,7 +430,7 @@ export function ChatSheet({
                 {/* Hero Price Section */}
                 <div className="relative mb-8">
                   <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-3xl blur-2xl" />
-                  <div className="relative text-center py-8 px-6 rounded-3xl bg-gradient-to-br from-zinc-50 to-white dark:from-zinc-800/80 dark:to-zinc-900/80 border border-zinc-200/50 dark:border-zinc-700/50">
+                  <div className="relative text-center py-8 px-6 rounded-3xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-700/50 shadow-xl shadow-zinc-200/50 dark:shadow-zinc-950/50">
                     <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2">Budget</p>
                     <div className="inline-flex items-baseline gap-1">
                       <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Rs.</span>
@@ -415,7 +444,7 @@ export function ChatSheet({
                 {/* Job Info Cards */}
                 <div className="space-y-4">
                   {/* Poster Card */}
-                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-br from-zinc-50 to-zinc-100/50 dark:from-zinc-800/50 dark:to-zinc-800/30 border border-zinc-200/50 dark:border-zinc-700/30">
+                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-700/30 shadow-lg shadow-zinc-200/30 dark:shadow-zinc-950/30">
                     <div className="relative">
                       <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl blur-sm opacity-50" />
                       <Avatar className="relative h-14 w-14 rounded-xl border-2 border-white dark:border-zinc-700 shadow-lg">
@@ -440,14 +469,14 @@ export function ChatSheet({
 
                   {/* Details Grid */}
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="p-4 rounded-2xl bg-gradient-to-br from-zinc-50 to-zinc-100/50 dark:from-zinc-800/50 dark:to-zinc-800/30 border border-zinc-200/50 dark:border-zinc-700/30">
+                    <div className="p-4 rounded-2xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-700/30 shadow-lg shadow-zinc-200/30 dark:shadow-zinc-950/30">
                       <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/20 mb-3">
                         <MapPin className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                       </div>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-0.5">Location</p>
                       <p className="font-medium text-zinc-900 dark:text-white">{job.location}</p>
                     </div>
-                    <div className="p-4 rounded-2xl bg-gradient-to-br from-zinc-50 to-zinc-100/50 dark:from-zinc-800/50 dark:to-zinc-800/30 border border-zinc-200/50 dark:border-zinc-700/30">
+                    <div className="p-4 rounded-2xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-700/30 shadow-lg shadow-zinc-200/30 dark:shadow-zinc-950/30">
                       <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-500/20 mb-3">
                         <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                       </div>
@@ -458,7 +487,7 @@ export function ChatSheet({
 
                   {/* Description */}
                   {job.description && (
-                    <div className="p-5 rounded-2xl bg-gradient-to-br from-zinc-50 to-zinc-100/50 dark:from-zinc-800/50 dark:to-zinc-800/30 border border-zinc-200/50 dark:border-zinc-700/30">
+                    <div className="p-5 rounded-2xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-700/30 shadow-lg shadow-zinc-200/30 dark:shadow-zinc-950/30">
                       <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-2">About this task</p>
                       <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed">
                         {job.description}
@@ -470,7 +499,7 @@ export function ChatSheet({
                 {/* Action Section */}
                 <div className="mt-8 space-y-4">
                   {!currentUserId ? (
-                    <div className="text-center p-8 rounded-3xl bg-gradient-to-br from-zinc-50 to-zinc-100/50 dark:from-zinc-800/50 dark:to-zinc-800/30 border border-zinc-200/50 dark:border-zinc-700/30">
+                    <div className="text-center p-8 rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-700/30 shadow-xl">
                       <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-zinc-200 dark:bg-zinc-700 mx-auto mb-4">
                         <User className="h-8 w-8 text-zinc-500 dark:text-zinc-400" />
                       </div>
@@ -479,7 +508,7 @@ export function ChatSheet({
                         Connect with the task owner
                       </p>
                       <Button 
-                        className="rounded-full px-8 h-11 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100 font-medium"
+                        className="rounded-full px-8 h-11 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100 font-medium shadow-lg"
                         onClick={() => window.location.href = "/login"}
                       >
                         Sign In
@@ -492,7 +521,7 @@ export function ChatSheet({
                           <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
                         </div>
                       ) : applicants.length === 0 ? (
-                        <div className="text-center p-8 rounded-3xl bg-gradient-to-br from-amber-50 to-orange-50/50 dark:from-amber-500/10 dark:to-orange-500/5 border border-amber-200/50 dark:border-amber-500/20">
+                        <div className="text-center p-8 rounded-3xl bg-gradient-to-br from-amber-50/80 to-orange-50/50 dark:from-amber-500/10 dark:to-orange-500/5 backdrop-blur-sm border border-amber-200/50 dark:border-amber-500/20 shadow-xl">
                           <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-500/20 mx-auto mb-4">
                             <MessageCircle className="h-8 w-8 text-amber-600 dark:text-amber-400" />
                           </div>
@@ -520,7 +549,7 @@ export function ChatSheet({
                                   setActiveConversationId(applicant.conversationId);
                                   setOtherUserEmail(applicant.workerEmail);
                                 }}
-                                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-br from-zinc-50 to-zinc-100/50 dark:from-zinc-800/50 dark:to-zinc-800/30 border border-zinc-200/50 dark:border-zinc-700/30 hover:border-emerald-300 dark:hover:border-emerald-600/50 transition-colors text-left"
+                                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-700/30 hover:border-emerald-300 dark:hover:border-emerald-600/50 transition-all shadow-lg hover:shadow-xl text-left"
                               >
                                 <Avatar className="h-12 w-12 rounded-xl border-2 border-white dark:border-zinc-700 shadow">
                                   <AvatarImage 
@@ -576,98 +605,138 @@ export function ChatSheet({
                 </div>
               </motion.div>
             ) : (
-              /* Chat View */
+              /* World-Class Chat View */
               <motion.div
                 key="chat"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                className="flex-1 flex flex-col overflow-hidden"
+                className="flex-1 flex flex-col overflow-hidden relative"
               >
-                {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {/* Messages Container with Mesh Gradient Background */}
+                <div 
+                  ref={messagesContainerRef}
+                  className="flex-1 overflow-y-auto px-4 pt-4 pb-28"
+                  style={{
+                    background: 'radial-gradient(ellipse at top, rgba(16, 185, 129, 0.03) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(20, 184, 166, 0.03) 0%, transparent 50%)'
+                  }}
+                >
                   {isLoading ? (
                     <div className="flex items-center justify-center h-full">
-                      <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
+                      <div className="flex flex-col items-center gap-3">
+                        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+                        <p className="text-sm text-zinc-500 dark:text-zinc-400">Loading messages...</p>
+                      </div>
                     </div>
                   ) : messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">
-                      <MessageCircle className="h-12 w-12 text-zinc-300 dark:text-zinc-700 mb-3" />
-                      <p className="text-zinc-500 dark:text-zinc-400">
-                        No messages yet
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-full blur-2xl" />
+                        <div className="relative w-20 h-20 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shadow-xl mb-4">
+                          <MessageCircle className="h-10 w-10 text-zinc-300 dark:text-zinc-600" />
+                        </div>
+                      </div>
+                      <p className="text-zinc-900 dark:text-white font-medium mb-1">
+                        Start the conversation
                       </p>
-                      <p className="text-zinc-400 dark:text-zinc-500 text-sm">
-                        Send a message to get started!
+                      <p className="text-zinc-500 dark:text-zinc-400 text-sm max-w-[200px]">
+                        Send a message to connect with this person
                       </p>
                     </div>
                   ) : (
-                    <>
+                    <div className="space-y-3">
                       {messages.map((message, index) => {
                         const isMe = message.senderId === currentUserId;
                         const showAvatar = index === 0 || 
                           messages[index - 1].senderId !== message.senderId;
+                        const isLastInGroup = index === messages.length - 1 ||
+                          messages[index + 1]?.senderId !== message.senderId;
                         
                         return (
                           <motion.div
                             key={message.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
                             className={`flex ${isMe ? "justify-end" : "justify-start"}`}
                           >
                             <div className={`flex items-end gap-2 max-w-[80%] ${isMe ? "flex-row-reverse" : ""}`}>
-                              {showAvatar && !isMe && (
-                                <Avatar className="h-7 w-7 border border-zinc-200 dark:border-zinc-700">
-                                  <AvatarImage 
-                                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${message.senderId}`} 
-                                  />
-                                  <AvatarFallback className="text-xs bg-zinc-200 dark:bg-zinc-700">
-                                    {extractRegNumber(message.senderEmail).slice(0, 2)}
-                                  </AvatarFallback>
-                                </Avatar>
+                              {/* Avatar for their messages */}
+                              {!isMe && (
+                                showAvatar ? (
+                                  <Avatar className="h-8 w-8 border-2 border-white dark:border-zinc-800 shadow-md">
+                                    <AvatarImage 
+                                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${message.senderId}`} 
+                                    />
+                                    <AvatarFallback className="text-xs bg-gradient-to-br from-zinc-200 to-zinc-300 dark:from-zinc-700 dark:to-zinc-600">
+                                      {extractRegNumber(message.senderEmail).slice(0, 2)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                ) : (
+                                  <div className="w-8" />
+                                )
                               )}
-                              {!showAvatar && !isMe && <div className="w-7" />}
-                              <div
-                                className={`px-4 py-2.5 rounded-2xl ${
-                                  isMe
-                                    ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-br-md"
-                                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded-bl-md"
-                                }`}
-                              >
-                                <p className="text-sm leading-relaxed">{message.content}</p>
+                              
+                              {/* Message Bubble */}
+                              <div className="flex flex-col gap-1">
+                                <div
+                                  className={`px-4 py-3 ${
+                                    isMe
+                                      ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-2xl rounded-tr-sm shadow-lg shadow-emerald-500/20"
+                                      : "bg-white dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-2xl rounded-tl-sm shadow-lg shadow-zinc-200/50 dark:shadow-zinc-950/50"
+                                  }`}
+                                >
+                                  <p className="text-[15px] leading-relaxed">{message.content}</p>
+                                </div>
+                                {/* Timestamp for last message in group */}
+                                {isLastInGroup && (
+                                  <p className={`text-[10px] text-zinc-400 dark:text-zinc-500 px-1 ${isMe ? 'text-right' : 'text-left'}`}>
+                                    {formatMessageTime(message.createdAt)}
+                                  </p>
+                                )}
                               </div>
                             </div>
                           </motion.div>
                         );
                       })}
-                      <div ref={messagesEndRef} />
-                    </>
+                      <div ref={messagesEndRef} className="h-1" />
+                    </div>
                   )}
                 </div>
 
-                {/* Input */}
-                <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
-                  <div className="flex items-center gap-2">
+                {/* Floating Dock Input */}
+                <div className="absolute bottom-0 left-0 right-0 px-4 pb-6 pt-2 bg-gradient-to-t from-zinc-50 dark:from-zinc-950 via-zinc-50/80 dark:via-zinc-950/80 to-transparent">
+                  <motion.div 
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    className="flex items-center gap-2 p-2 pl-5 rounded-full bg-white dark:bg-zinc-900 shadow-xl shadow-zinc-300/50 dark:shadow-zinc-950/50 border border-zinc-200/50 dark:border-zinc-800/50"
+                  >
                     <Input
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyDown={handleKeyPress}
                       placeholder="Type a message..."
-                      className="flex-1 h-12 rounded-xl bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 focus-visible:ring-emerald-500"
+                      className="flex-1 h-10 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 text-zinc-900 dark:text-white"
                       disabled={isSending}
                     />
-                    <Button
-                      onClick={handleSendMessage}
-                      disabled={!newMessage.trim() || isSending}
-                      size="icon"
-                      className="h-12 w-12 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25"
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
-                      {isSending ? (
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <Send className="h-5 w-5" />
-                      )}
-                    </Button>
-                  </div>
+                      <Button
+                        onClick={handleSendMessage}
+                        disabled={!newMessage.trim() || isSending}
+                        size="icon"
+                        className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:shadow-none transition-all"
+                      >
+                        {isSending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Send className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </motion.div>
+                  </motion.div>
                 </div>
               </motion.div>
             )}
