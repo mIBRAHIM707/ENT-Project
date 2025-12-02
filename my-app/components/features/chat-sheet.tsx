@@ -9,7 +9,9 @@ import {
   Clock, 
   Loader2,
   ArrowLeft,
-  User
+  User,
+  Users,
+  ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +47,14 @@ interface Message {
   senderEmail?: string;
 }
 
+interface Applicant {
+  conversationId: string;
+  workerId: string;
+  workerEmail: string;
+  lastMessage?: string;
+  lastMessageTime?: string;
+}
+
 interface ChatSheetProps {
   job: Job | null;
   isOpen: boolean;
@@ -72,6 +82,8 @@ export function ChatSheet({
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [otherUserEmail, setOtherUserEmail] = useState<string | null>(null);
+  const [applicants, setApplicants] = useState<Applicant[]>([]);
+  const [isLoadingApplicants, setIsLoadingApplicants] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const supabase = createClient();
@@ -94,8 +106,65 @@ export function ChatSheet({
       setMessages([]);
       setNewMessage("");
       setOtherUserEmail(null);
+      setApplicants([]);
     }
   }, [isOpen, job?.id]);
+
+  // Fetch applicants for job owner
+  useEffect(() => {
+    if (!isOpen || !job || !currentUserId || !isOwner) return;
+
+    const fetchApplicants = async () => {
+      setIsLoadingApplicants(true);
+
+      // Get all conversations for this job
+      const { data: conversations, error } = await supabase
+        .from("conversations")
+        .select("id, worker_id, created_at")
+        .eq("job_id", job.id);
+
+      if (error || !conversations || conversations.length === 0) {
+        setApplicants([]);
+        setIsLoadingApplicants(false);
+        return;
+      }
+
+      // Get worker profiles
+      const workerIds = conversations.map(c => c.worker_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, email")
+        .in("id", workerIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.id, p.email]) || []);
+
+      // Get last message for each conversation
+      const applicantData: Applicant[] = await Promise.all(
+        conversations.map(async (conv) => {
+          const { data: lastMsg } = await supabase
+            .from("messages")
+            .select("content, created_at")
+            .eq("conversation_id", conv.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+
+          return {
+            conversationId: conv.id,
+            workerId: conv.worker_id,
+            workerEmail: profileMap.get(conv.worker_id) || "",
+            lastMessage: lastMsg?.content,
+            lastMessageTime: lastMsg?.created_at,
+          };
+        })
+      );
+
+      setApplicants(applicantData);
+      setIsLoadingApplicants(false);
+    };
+
+    fetchApplicants();
+  }, [isOpen, job, currentUserId, isOwner, supabase]);
 
   // Check for existing conversation when sheet opens (for non-owners)
   useEffect(() => {
@@ -304,7 +373,7 @@ export function ChatSheet({
             <div className="flex-1 min-w-0">
               <SheetTitle className="text-lg font-semibold text-zinc-900 dark:text-white truncate tracking-tight">
                 {activeConversationId 
-                  ? `Chat with ${extractRegNumber(isOwner ? otherUserEmail : job.studentName)}` 
+                  ? `Chat with ${isOwner ? extractRegNumber(otherUserEmail) : job.studentName}` 
                   : job.title}
               </SheetTitle>
               {!activeConversationId && (
@@ -417,14 +486,71 @@ export function ChatSheet({
                       </Button>
                     </div>
                   ) : isOwner ? (
-                    <div className="text-center p-8 rounded-3xl bg-gradient-to-br from-amber-50 to-orange-50/50 dark:from-amber-500/10 dark:to-orange-500/5 border border-amber-200/50 dark:border-amber-500/20">
-                      <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-500/20 mx-auto mb-4">
-                        <MessageCircle className="h-8 w-8 text-amber-600 dark:text-amber-400" />
-                      </div>
-                      <p className="text-amber-900 dark:text-amber-300 font-medium mb-1">Your Task</p>
-                      <p className="text-amber-700/80 dark:text-amber-400/60 text-sm">
-                        Waiting for applicants to reach out...
-                      </p>
+                    <div className="space-y-4">
+                      {isLoadingApplicants ? (
+                        <div className="flex items-center justify-center p-8">
+                          <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
+                        </div>
+                      ) : applicants.length === 0 ? (
+                        <div className="text-center p-8 rounded-3xl bg-gradient-to-br from-amber-50 to-orange-50/50 dark:from-amber-500/10 dark:to-orange-500/5 border border-amber-200/50 dark:border-amber-500/20">
+                          <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-500/20 mx-auto mb-4">
+                            <MessageCircle className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+                          </div>
+                          <p className="text-amber-900 dark:text-amber-300 font-medium mb-1">Your Task</p>
+                          <p className="text-amber-700/80 dark:text-amber-400/60 text-sm">
+                            Waiting for applicants to reach out...
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 mb-4">
+                            <Users className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                            <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                              {applicants.length} Applicant{applicants.length > 1 ? "s" : ""}
+                            </p>
+                          </div>
+                          {applicants.map((applicant) => (
+                            <motion.div
+                              key={applicant.conversationId}
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <button
+                                onClick={() => {
+                                  setActiveConversationId(applicant.conversationId);
+                                  setOtherUserEmail(applicant.workerEmail);
+                                }}
+                                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-br from-zinc-50 to-zinc-100/50 dark:from-zinc-800/50 dark:to-zinc-800/30 border border-zinc-200/50 dark:border-zinc-700/30 hover:border-emerald-300 dark:hover:border-emerald-600/50 transition-colors text-left"
+                              >
+                                <Avatar className="h-12 w-12 rounded-xl border-2 border-white dark:border-zinc-700 shadow">
+                                  <AvatarImage 
+                                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${applicant.workerId}`} 
+                                    className="rounded-xl"
+                                  />
+                                  <AvatarFallback className="rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white font-semibold text-sm">
+                                    {extractRegNumber(applicant.workerEmail).slice(0, 2)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-zinc-900 dark:text-white">
+                                    {extractRegNumber(applicant.workerEmail)}
+                                  </p>
+                                  {applicant.lastMessage ? (
+                                    <p className="text-sm text-zinc-500 dark:text-zinc-400 truncate">
+                                      {applicant.lastMessage}
+                                    </p>
+                                  ) : (
+                                    <p className="text-sm text-zinc-400 dark:text-zinc-500 italic">
+                                      No messages yet
+                                    </p>
+                                  )}
+                                </div>
+                                <ChevronRight className="h-5 w-5 text-zinc-400" />
+                              </button>
+                            </motion.div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <motion.div
