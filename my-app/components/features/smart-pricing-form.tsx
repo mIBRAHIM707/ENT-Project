@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Coffee, Zap, CheckCircle2, Sparkles, MapPin } from "lucide-react";
+import { Loader2, Coffee, Zap, CheckCircle2, Sparkles, MapPin, Tag } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createJob } from "@/app/actions/create-job";
+
+// Task categories
+export const TASK_CATEGORIES = [
+  { value: "food-delivery", label: "Food Delivery", emoji: "🍔" },
+  { value: "assignments", label: "Assignments", emoji: "📚" },
+  { value: "tech-support", label: "Tech Support", emoji: "💻" },
+  { value: "ride-share", label: "Ride Share", emoji: "🚗" },
+  { value: "shopping", label: "Shopping", emoji: "🛒" },
+  { value: "tutoring", label: "Tutoring", emoji: "👨‍🏫" },
+  { value: "laundry", label: "Laundry", emoji: "👕" },
+  { value: "printing", label: "Printing", emoji: "🖨️" },
+  { value: "moving", label: "Moving Help", emoji: "📦" },
+  { value: "other", label: "Other", emoji: "✨" },
+];
 
 // Campus location options
 const CAMPUS_LOCATIONS = [
@@ -53,6 +67,7 @@ export function SmartPricingForm({ onSuccess }: SmartPricingFormProps) {
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [location, setLocation] = useState("");
+  const [category, setCategory] = useState("");
 
   // Map urgency slider value to text
   const getUrgencyText = (value: number) => {
@@ -134,6 +149,35 @@ export function SmartPricingForm({ onSuccess }: SmartPricingFormProps) {
                   className="rounded-lg focus:bg-emerald-50 dark:focus:bg-emerald-500/10 cursor-pointer"
                 >
                   {loc}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Category Selector */}
+        <div className="mt-4">
+          <label className="text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400 font-semibold mb-2 block">
+            Category
+          </label>
+          <Select value={category} onValueChange={setCategory}>
+            <SelectTrigger className="w-full h-12 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus:ring-1 focus:ring-emerald-500">
+              <div className="flex items-center gap-2">
+                <Tag className="h-4 w-4 text-zinc-400" />
+                <SelectValue placeholder="What type of task is this?" />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900">
+              {TASK_CATEGORIES.map((cat) => (
+                <SelectItem 
+                  key={cat.value} 
+                  value={cat.value}
+                  className="rounded-lg focus:bg-emerald-50 dark:focus:bg-emerald-500/10 cursor-pointer"
+                >
+                  <span className="flex items-center gap-2">
+                    <span>{cat.emoji}</span>
+                    <span>{cat.label}</span>
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -231,6 +275,7 @@ export function SmartPricingForm({ onSuccess }: SmartPricingFormProps) {
                       formData.append("price", calculatedPrice.toString());
                       formData.append("urgency", getUrgencyText(urgency[0]));
                       formData.append("location", location || "Campus");
+                      formData.append("category", category || "other");
 
                       const result = await createJob(formData);
 

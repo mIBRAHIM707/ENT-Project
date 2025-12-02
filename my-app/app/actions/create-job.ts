@@ -20,9 +20,11 @@ export async function createJob(formData: FormData): Promise<CreateJobResult> {
 
   // Extract form data
   const title = formData.get("title") as string;
+  const description = formData.get("description") as string;
   const priceString = formData.get("price") as string;
   const urgency = (formData.get("urgency") as string) || "Flexible";
   const location = (formData.get("location") as string) || "Campus";
+  const category = (formData.get("category") as string) || "other";
 
   // Validate required fields
   if (!title || !priceString) {
@@ -38,9 +40,11 @@ export async function createJob(formData: FormData): Promise<CreateJobResult> {
   // Insert job into database with the authenticated user's ID
   const { error } = await supabase.from("jobs").insert({
     title,
+    description,
     price,
     urgency,
     location,
+    category,
     user_id: user.id,
   });
 

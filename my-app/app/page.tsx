@@ -45,6 +45,7 @@ interface JobRow {
   price: number;
   urgency: string;
   location: string;
+  category?: string | null;
   user_id: string | null;
   created_at?: string;
   student_name?: string | null;
@@ -73,6 +74,7 @@ export default async function Home() {
     price: job.price,
     urgency: job.urgency || "Flexible",
     location: job.location || "Campus",
+    category: job.category || "",
     userId: job.user_id || "",
     // Use display name if set, otherwise fall back to roll number from email
     studentName: job.student_name || extractRegNumber(job.student_email),
