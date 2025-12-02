@@ -13,7 +13,7 @@ type Stage = "email" | "otp" | "success";
 export function GikiLoginForm() {
   const [stage, setStage] = useState<Stage>("email");
   const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [otp, setOtp] = useState(["", "", "", "", "", "", "", ""]);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -43,7 +43,7 @@ export function GikiLoginForm() {
 
     if (!isValidGikiEmail(email)) {
       if (email.includes("@gmail") || email.includes("@yahoo") || email.includes("@hotmail")) {
-        setError("🔒 Exclusive to GIKI Students only.");
+        setError("Exclusive to GIKI Students only.");
       } else {
         setError("Please use your GIKI email (@giki.edu.pk)");
       }
@@ -55,6 +55,8 @@ export function GikiLoginForm() {
         email,
         options: {
           shouldCreateUser: true,
+          // Force OTP code instead of magic link
+          emailRedirectTo: undefined,
         },
       });
 
@@ -70,15 +72,15 @@ export function GikiLoginForm() {
   const handleOtpChange = (index: number, value: string) => {
     if (value.length > 1) {
       // Handle paste
-      const digits = value.replace(/\D/g, "").slice(0, 6).split("");
+      const digits = value.replace(/\D/g, "").slice(0, 8).split("");
       const newOtp = [...otp];
       digits.forEach((digit, i) => {
-        if (index + i < 6) {
+        if (index + i < 8) {
           newOtp[index + i] = digit;
         }
       });
       setOtp(newOtp);
-      const nextIndex = Math.min(index + digits.length, 5);
+      const nextIndex = Math.min(index + digits.length, 7);
       otpRefs.current[nextIndex]?.focus();
     } else {
       const newOtp = [...otp];
@@ -86,7 +88,7 @@ export function GikiLoginForm() {
       setOtp(newOtp);
       
       // Auto-focus next input
-      if (value && index < 5) {
+      if (value && index < 7) {
         otpRefs.current[index + 1]?.focus();
       }
     }
@@ -104,8 +106,8 @@ export function GikiLoginForm() {
     setError(null);
     const token = otp.join("");
 
-    if (token.length !== 6) {
-      setError("Please enter the 6-digit code");
+    if (token.length !== 8) {
+      setError("Please enter the 8-digit code");
       return;
     }
 
@@ -253,18 +255,18 @@ export function GikiLoginForm() {
                 className="space-y-6"
               >
                 {/* OTP Inputs */}
-                <div className="flex justify-center gap-2 sm:gap-3">
+                <div className="flex justify-center gap-1.5 sm:gap-2">
                   {otp.map((digit, index) => (
                     <input
                       key={index}
                       ref={(el) => { otpRefs.current[index] = el; }}
                       type="text"
                       inputMode="numeric"
-                      maxLength={6}
+                      maxLength={8}
                       value={digit}
                       onChange={(e) => handleOtpChange(index, e.target.value)}
                       onKeyDown={(e) => handleKeyDown(index, e)}
-                      className="w-12 h-14 sm:w-14 sm:h-16 text-center text-2xl font-bold rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border-2 border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                      className="w-10 h-12 sm:w-11 sm:h-14 text-center text-xl font-bold rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border-2 border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
                     />
                   ))}
                 </div>
@@ -302,7 +304,7 @@ export function GikiLoginForm() {
                 <button
                   onClick={() => {
                     setStage("email");
-                    setOtp(["", "", "", "", "", ""]);
+                    setOtp(["", "", "", "", "", "", "", ""]);
                     setError(null);
                   }}
                   className="w-full text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
@@ -329,10 +331,10 @@ export function GikiLoginForm() {
                   <CheckCircle2 className="w-10 h-10 text-emerald-600 dark:text-emerald-400" />
                 </motion.div>
                 <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-2">
-                  Welcome back, {extractRollNumber(email)}! 🎉
+                  Welcome back, {extractRollNumber(email)}
                 </h3>
                 <p className="text-zinc-500 dark:text-zinc-400 text-sm">
-                  Redirecting you to the app...
+                  Signing you in...
                 </p>
                 <div className="mt-4">
                   <Loader2 className="h-5 w-5 animate-spin mx-auto text-emerald-500" />

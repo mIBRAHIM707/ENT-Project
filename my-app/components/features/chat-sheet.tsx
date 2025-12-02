@@ -123,29 +123,39 @@ export function ChatSheet({
 
     const fetchMessages = async () => {
       setIsLoading(true);
+      
+      // First fetch messages
       const { data, error } = await supabase
         .from("messages")
-        .select(`
-          id,
-          conversation_id,
-          sender_id,
-          content,
-          created_at,
-          profiles!messages_sender_id_fkey (email)
-        `)
+        .select("*")
         .eq("conversation_id", activeConversationId)
         .order("created_at", { ascending: true });
 
-      if (!error && data) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const formattedMessages: Message[] = data.map((msg: any) => ({
+      if (error) {
+        console.error("Error fetching messages:", error);
+        setIsLoading(false);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        // Fetch sender profiles separately
+        const senderIds = [...new Set(data.map(m => m.sender_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, email")
+          .in("id", senderIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.id, p.email]) || []);
+
+        const formattedMessages: Message[] = data.map((msg) => ({
           id: msg.id,
           conversationId: msg.conversation_id,
           senderId: msg.sender_id,
           content: msg.content,
           createdAt: msg.created_at,
-          senderEmail: msg.profiles?.email || (Array.isArray(msg.profiles) ? msg.profiles[0]?.email : null),
+          senderEmail: profileMap.get(msg.sender_id) || null,
         }));
+        
         setMessages(formattedMessages);
 
         // Get the other user's email for display
@@ -153,6 +163,8 @@ export function ChatSheet({
         if (otherMsg?.senderEmail) {
           setOtherUserEmail(otherMsg.senderEmail);
         }
+      } else {
+        setMessages([]);
       }
       setIsLoading(false);
     };
@@ -274,29 +286,29 @@ export function ChatSheet({
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <SheetContent 
         side="right" 
-        className="w-full sm:max-w-md p-0 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 flex flex-col"
+        className="w-full sm:max-w-md p-0 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border-zinc-200/50 dark:border-zinc-800/50 flex flex-col"
       >
-        {/* Header */}
-        <SheetHeader className="p-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
+        {/* Premium Header */}
+        <SheetHeader className="p-5 border-b border-zinc-200/50 dark:border-zinc-800/50 bg-gradient-to-b from-white to-zinc-50/50 dark:from-zinc-900 dark:to-zinc-900/50">
           <div className="flex items-center gap-3">
             {activeConversationId && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 -ml-2"
+                className="h-8 w-8 -ml-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"
                 onClick={() => setActiveConversationId(null)}
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             )}
             <div className="flex-1 min-w-0">
-              <SheetTitle className="text-lg font-semibold text-zinc-900 dark:text-white truncate">
+              <SheetTitle className="text-lg font-semibold text-zinc-900 dark:text-white truncate tracking-tight">
                 {activeConversationId 
                   ? `Chat with ${extractRegNumber(isOwner ? otherUserEmail : job.studentName)}` 
                   : job.title}
               </SheetTitle>
               {!activeConversationId && (
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
                   Posted by {job.studentName}
                 </p>
               )}
@@ -308,107 +320,132 @@ export function ChatSheet({
         <div className="flex-1 overflow-hidden flex flex-col">
           <AnimatePresence mode="wait">
             {!activeConversationId ? (
-              /* Job Details View */
+              /* Job Details View - Premium Design */
               <motion.div
                 key="details"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="flex-1 p-4 overflow-y-auto"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="flex-1 p-5 overflow-y-auto"
               >
-                {/* Price Badge */}
-                <div className="flex justify-center mb-6">
-                  <div className="inline-flex items-center px-5 py-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-xl shadow-lg shadow-emerald-500/25">
-                    Rs. {job.price}
+                {/* Hero Price Section */}
+                <div className="relative mb-8">
+                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-3xl blur-2xl" />
+                  <div className="relative text-center py-8 px-6 rounded-3xl bg-gradient-to-br from-zinc-50 to-white dark:from-zinc-800/80 dark:to-zinc-900/80 border border-zinc-200/50 dark:border-zinc-700/50">
+                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2">Budget</p>
+                    <div className="inline-flex items-baseline gap-1">
+                      <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Rs.</span>
+                      <span className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">
+                        {job.price.toLocaleString()}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Job Info */}
+                {/* Job Info Cards */}
                 <div className="space-y-4">
-                  {/* Poster */}
-                  <div className="flex items-center gap-3 p-4 rounded-2xl bg-zinc-100 dark:bg-zinc-800/50">
-                    <Avatar className="h-12 w-12 border-2 border-white dark:border-zinc-700">
-                      <AvatarImage src={job.avatarUrl} />
-                      <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white">
-                        {job.studentName.slice(0, 2)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-semibold text-zinc-900 dark:text-white">
+                  {/* Poster Card */}
+                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-br from-zinc-50 to-zinc-100/50 dark:from-zinc-800/50 dark:to-zinc-800/30 border border-zinc-200/50 dark:border-zinc-700/30">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl blur-sm opacity-50" />
+                      <Avatar className="relative h-14 w-14 rounded-xl border-2 border-white dark:border-zinc-700 shadow-lg">
+                        <AvatarImage src={job.avatarUrl} className="rounded-xl" />
+                        <AvatarFallback className="rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white font-semibold">
+                          {job.studentName.slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-zinc-900 dark:text-white tracking-tight">
                         {job.studentName}
                       </p>
                       <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                        Job Poster
+                        Task Owner
                       </p>
+                    </div>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20">
+                      <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                     </div>
                   </div>
 
-                  {/* Details */}
+                  {/* Details Grid */}
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="flex items-center gap-2 p-3 rounded-xl bg-zinc-100 dark:bg-zinc-800/50">
-                      <MapPin className="h-4 w-4 text-zinc-500" />
-                      <span className="text-sm text-zinc-700 dark:text-zinc-300">{job.location}</span>
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-zinc-50 to-zinc-100/50 dark:from-zinc-800/50 dark:to-zinc-800/30 border border-zinc-200/50 dark:border-zinc-700/30">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/20 mb-3">
+                        <MapPin className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-0.5">Location</p>
+                      <p className="font-medium text-zinc-900 dark:text-white">{job.location}</p>
                     </div>
-                    <div className="flex items-center gap-2 p-3 rounded-xl bg-zinc-100 dark:bg-zinc-800/50">
-                      <Clock className="h-4 w-4 text-zinc-500" />
-                      <span className="text-sm text-zinc-700 dark:text-zinc-300">{job.urgency}</span>
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-zinc-50 to-zinc-100/50 dark:from-zinc-800/50 dark:to-zinc-800/30 border border-zinc-200/50 dark:border-zinc-700/30">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-500/20 mb-3">
+                        <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-0.5">Urgency</p>
+                      <p className="font-medium text-zinc-900 dark:text-white">{job.urgency}</p>
                     </div>
                   </div>
 
                   {/* Description */}
                   {job.description && (
-                    <div className="p-4 rounded-2xl bg-zinc-100 dark:bg-zinc-800/50">
-                      <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">
-                        Description
-                      </p>
-                      <p className="text-zinc-700 dark:text-zinc-300">
+                    <div className="p-5 rounded-2xl bg-gradient-to-br from-zinc-50 to-zinc-100/50 dark:from-zinc-800/50 dark:to-zinc-800/30 border border-zinc-200/50 dark:border-zinc-700/30">
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-2">About this task</p>
+                      <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed">
                         {job.description}
                       </p>
                     </div>
                   )}
                 </div>
 
-                {/* Action Button */}
-                <div className="mt-8">
+                {/* Action Section */}
+                <div className="mt-8 space-y-4">
                   {!currentUserId ? (
-                    <div className="text-center p-6 rounded-2xl bg-zinc-100 dark:bg-zinc-800/50">
-                      <User className="h-10 w-10 text-zinc-400 mx-auto mb-3" />
-                      <p className="text-zinc-600 dark:text-zinc-400 mb-2">
-                        Login to apply for this job
+                    <div className="text-center p-8 rounded-3xl bg-gradient-to-br from-zinc-50 to-zinc-100/50 dark:from-zinc-800/50 dark:to-zinc-800/30 border border-zinc-200/50 dark:border-zinc-700/30">
+                      <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-zinc-200 dark:bg-zinc-700 mx-auto mb-4">
+                        <User className="h-8 w-8 text-zinc-500 dark:text-zinc-400" />
+                      </div>
+                      <p className="text-zinc-900 dark:text-white font-medium mb-1">Sign in to apply</p>
+                      <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-4">
+                        Connect with the task owner
                       </p>
                       <Button 
-                        variant="outline"
-                        className="rounded-full"
+                        className="rounded-full px-8 h-11 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100 font-medium"
                         onClick={() => window.location.href = "/login"}
                       >
-                        Login
+                        Sign In
                       </Button>
                     </div>
                   ) : isOwner ? (
-                    <div className="text-center p-6 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20">
-                      <MessageCircle className="h-10 w-10 text-amber-500 mx-auto mb-3" />
-                      <p className="text-amber-700 dark:text-amber-400 font-medium">
-                        This is your job posting
-                      </p>
-                      <p className="text-amber-600/80 dark:text-amber-400/60 text-sm mt-1">
-                        Waiting for applicants to message you...
+                    <div className="text-center p-8 rounded-3xl bg-gradient-to-br from-amber-50 to-orange-50/50 dark:from-amber-500/10 dark:to-orange-500/5 border border-amber-200/50 dark:border-amber-500/20">
+                      <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-500/20 mx-auto mb-4">
+                        <MessageCircle className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <p className="text-amber-900 dark:text-amber-300 font-medium mb-1">Your Task</p>
+                      <p className="text-amber-700/80 dark:text-amber-400/60 text-sm">
+                        Waiting for applicants to reach out...
                       </p>
                     </div>
                   ) : (
-                    <Button
-                      onClick={handleStartChat}
-                      disabled={isLoading}
-                      className="w-full h-14 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold text-lg shadow-lg shadow-emerald-500/25"
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      {isLoading ? (
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <>
-                          <MessageCircle className="mr-2 h-5 w-5" />
-                          Start Chat / Apply
-                        </>
-                      )}
-                    </Button>
+                      <Button
+                        onClick={handleStartChat}
+                        disabled={isLoading}
+                        className="w-full h-14 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold text-lg shadow-xl shadow-emerald-500/30 border-0"
+                      >
+                        {isLoading ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <>
+                            <MessageCircle className="mr-2 h-5 w-5" />
+                            Start Conversation
+                          </>
+                        )}
+                      </Button>
+                    </motion.div>
                   )}
                 </div>
               </motion.div>
