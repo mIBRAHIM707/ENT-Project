@@ -12,7 +12,9 @@ import {
   Loader2,
   CheckCircle2,
   Pencil,
-  Save
+  Save,
+  Star,
+  Quote
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -21,6 +23,18 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { updateProfile } from "@/app/actions/update-profile";
 import Link from "next/link";
 
+interface Rating {
+  id: string;
+  rating: number;
+  review: string | null;
+  rating_type: string;
+  created_at: string;
+  raterName: string | null;
+  raterEmail: string | null;
+  raterAvatar: string | null;
+  jobTitle: string;
+}
+
 interface ProfileClientProps {
   email: string;
   displayName: string;
@@ -28,6 +42,9 @@ interface ProfileClientProps {
   tasksPosted: number;
   tasksApplied: number;
   createdAt: string;
+  averageRating: number;
+  totalRatings: number;
+  ratings: Rating[];
 }
 
 // Extract roll number from GIKI email
@@ -52,6 +69,9 @@ export function ProfileClient({
   tasksPosted,
   tasksApplied,
   createdAt,
+  averageRating,
+  totalRatings,
+  ratings,
 }: ProfileClientProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(displayName);
@@ -327,6 +347,118 @@ export function ProfileClient({
                 </div>
               </div>
             </motion.div>
+
+            {/* Ratings Section */}
+            {totalRatings > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="mt-8"
+              >
+                <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-4">
+                  Ratings & Reviews
+                </p>
+                
+                {/* Rating Summary */}
+                <div className="p-6 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/5 border border-amber-200/50 dark:border-amber-500/20 mb-4">
+                  <div className="flex items-center gap-6">
+                    {/* Average Rating */}
+                    <div className="text-center">
+                      <p className="text-4xl font-bold text-amber-900 dark:text-white">
+                        {averageRating.toFixed(1)}
+                      </p>
+                      <div className="flex items-center justify-center gap-0.5 mt-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className={`h-4 w-4 ${
+                              star <= Math.round(averageRating)
+                                ? "text-amber-500 fill-amber-500"
+                                : "text-zinc-300 dark:text-zinc-600"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <p className="text-xs text-amber-600/70 dark:text-amber-400/60 mt-1">
+                        {totalRatings} {totalRatings === 1 ? "review" : "reviews"}
+                      </p>
+                    </div>
+
+                    {/* Rating Breakdown */}
+                    <div className="flex-1 space-y-1.5">
+                      {[5, 4, 3, 2, 1].map((star) => {
+                        const count = ratings.filter((r) => r.rating === star).length;
+                        const percentage = totalRatings > 0 ? (count / totalRatings) * 100 : 0;
+                        return (
+                          <div key={star} className="flex items-center gap-2">
+                            <span className="text-xs text-zinc-500 dark:text-zinc-400 w-3">
+                              {star}
+                            </span>
+                            <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+                            <div className="flex-1 h-2 bg-amber-100 dark:bg-amber-900/20 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-amber-500 rounded-full transition-all"
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-zinc-500 dark:text-zinc-400 w-6">
+                              {count}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recent Reviews */}
+                {ratings.filter((r) => r.review).length > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                      Recent Reviews
+                    </p>
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      {ratings
+                        .filter((r) => r.review)
+                        .slice(0, 5)
+                        .map((rating) => (
+                          <div
+                            key={rating.id}
+                            className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-zinc-700/50"
+                          >
+                            <div className="flex items-start gap-3">
+                              <Quote className="h-4 w-4 text-zinc-400 dark:text-zinc-500 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                                  {rating.review}
+                                </p>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <div className="flex items-center gap-0.5">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                      <Star
+                                        key={star}
+                                        className={`h-3 w-3 ${
+                                          star <= rating.rating
+                                            ? "text-amber-500 fill-amber-500"
+                                            : "text-zinc-300 dark:text-zinc-600"
+                                        }`}
+                                      />
+                                    ))}
+                                  </div>
+                                  <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                                    for {rating.jobTitle}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
           </div>
         </motion.div>
 

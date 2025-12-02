@@ -25,7 +25,7 @@ export async function assignWorker(
   // Verify user owns the job
   const { data: job, error: fetchError } = await supabase
     .from("jobs")
-    .select("user_id, status")
+    .select("user_id, status, title")
     .eq("id", jobId)
     .maybeSingle();
 
@@ -55,8 +55,46 @@ export async function assignWorker(
     return { error: error.message };
   }
 
+  // Find or create conversation with the worker and send notification message
+  const { data: existingConv } = await supabase
+    .from("conversations")
+    .select("id")
+    .eq("job_id", jobId)
+    .eq("worker_id", workerId)
+    .maybeSingle();
+
+  let conversationId = existingConv?.id;
+
+  if (!conversationId) {
+    // Create conversation if it doesn't exist
+    const { data: newConv, error: convError } = await supabase
+      .from("conversations")
+      .insert({
+        job_id: jobId,
+        worker_id: workerId,
+      })
+      .select("id")
+      .single();
+
+    if (convError) {
+      console.error("Error creating conversation:", convError);
+    } else {
+      conversationId = newConv?.id;
+    }
+  }
+
+  // Send notification message - Premium Apple-style
+  if (conversationId) {
+    await supabase.from("messages").insert({
+      conversation_id: conversationId,
+      sender_id: user.id,
+      content: `You've been selected for "${job.title}". Ready when you are.`,
+    });
+  }
+
   revalidatePath("/");
   revalidatePath("/my-jobs");
+  revalidatePath("/my-gigs");
 
   return { success: true };
 }
@@ -76,7 +114,7 @@ export async function updateJobStatus(
   // Fetch job to check permissions
   const { data: job, error: fetchError } = await supabase
     .from("jobs")
-    .select("user_id, assigned_to, status")
+    .select("user_id, assigned_to, status, title")
     .eq("id", jobId)
     .maybeSingle();
 
@@ -131,8 +169,37 @@ export async function updateJobStatus(
     return { error: error.message };
   }
 
+  // Send notification messages for status changes - Premium Apple-style
+  if (job.assigned_to) {
+    const { data: conv } = await supabase
+      .from("conversations")
+      .select("id")
+      .eq("job_id", jobId)
+      .eq("worker_id", job.assigned_to)
+      .maybeSingle();
+
+    if (conv) {
+      let notificationMessage = "";
+      
+      if (status === "completed") {
+        notificationMessage = `Task completed. "${job.title}" is now finished. Thank you for your work.`;
+      } else if (status === "cancelled") {
+        notificationMessage = `This task has been cancelled. "${job.title}" is no longer available.`;
+      }
+      
+      if (notificationMessage) {
+        await supabase.from("messages").insert({
+          conversation_id: conv.id,
+          sender_id: user.id,
+          content: notificationMessage,
+        });
+      }
+    }
+  }
+
   revalidatePath("/");
   revalidatePath("/my-jobs");
+  revalidatePath("/my-gigs");
 
   return { success: true };
 }

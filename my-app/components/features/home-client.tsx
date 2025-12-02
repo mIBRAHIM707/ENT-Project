@@ -40,6 +40,7 @@ interface Job {
   location: string;
   category?: string;
   status?: JobStatus;
+  assignedTo?: string | null;
   userId: string;
   studentName: string;
   avatarUrl: string;
@@ -231,6 +232,8 @@ export function HomeClient({ jobs }: HomeClientProps) {
           userId: selectedJob.userId,
           studentName: selectedJob.studentName,
           avatarUrl: selectedJob.avatarUrl,
+          status: selectedJob.status,
+          assignedTo: selectedJob.assignedTo,
         } : null}
         isOpen={chatSheetOpen}
         onClose={() => setChatSheetOpen(false)}

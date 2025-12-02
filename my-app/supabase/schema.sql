@@ -98,14 +98,19 @@ CREATE TABLE IF NOT EXISTS jobs (
   price INTEGER NOT NULL CHECK (price >= 0),
   urgency TEXT NOT NULL DEFAULT 'Flexible',
   location TEXT NOT NULL DEFAULT 'Campus',
+  category TEXT,
   status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'completed', 'cancelled')),
   
   -- Poster Info (references Supabase Auth) - NOW REQUIRED
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   
+  -- Assigned Worker (who got the job)
+  assigned_to UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  
   -- Timestamps
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  completed_at TIMESTAMPTZ
 );
 
 -- ============================================
@@ -167,13 +172,18 @@ SELECT
   j.price,
   j.urgency,
   j.location,
+  j.category,
   j.status,
+  j.assigned_to,
   j.created_at,
   j.updated_at,
+  j.completed_at,
   j.user_id,
   p.full_name AS student_name,
   p.email AS student_email,
   p.avatar_url
+FROM jobs j
+LEFT JOIN profiles p ON j.user_id = p.id;
 FROM jobs j
 LEFT JOIN profiles p ON j.user_id = p.id;
 
@@ -328,3 +338,112 @@ LEFT JOIN profiles p ON m.sender_id = p.id;
 -- This allows clients to subscribe to new messages
 -- ============================================
 ALTER PUBLICATION supabase_realtime ADD TABLE messages;
+
+-- ============================================
+-- RATINGS TABLE
+-- For rating users after job completion
+-- ============================================
+CREATE TABLE IF NOT EXISTS ratings (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  
+  -- The job this rating is for
+  job_id UUID NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+  
+  -- Who gave the rating
+  rater_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  
+  -- Who received the rating
+  rated_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  
+  -- Rating value (1-5 stars)
+  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  
+  -- Optional review text
+  review TEXT,
+  
+  -- Type: poster rating helper, or helper rating poster
+  rating_type TEXT NOT NULL CHECK (rating_type IN ('poster_to_helper', 'helper_to_poster')),
+  
+  -- Timestamps
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  
+  -- Ensure one rating per user per job per type
+  UNIQUE(job_id, rater_id, rating_type)
+);
+
+-- Indexes for ratings
+CREATE INDEX IF NOT EXISTS ratings_rated_id_idx ON ratings(rated_id);
+CREATE INDEX IF NOT EXISTS ratings_rater_id_idx ON ratings(rater_id);
+CREATE INDEX IF NOT EXISTS ratings_job_id_idx ON ratings(job_id);
+
+-- Enable RLS
+ALTER TABLE ratings ENABLE ROW LEVEL SECURITY;
+
+-- Policy: Anyone can view ratings
+CREATE POLICY "Ratings are viewable by everyone"
+  ON ratings
+  FOR SELECT
+  USING (true);
+
+-- Policy: Authenticated users can create ratings for jobs they're involved in
+CREATE POLICY "Users can create ratings"
+  ON ratings
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = rater_id);
+
+-- ============================================
+-- Add rating stats columns to profiles
+-- ============================================
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS average_rating DECIMAL(3,2) DEFAULT 0;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS total_ratings INTEGER DEFAULT 0;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS tasks_completed INTEGER DEFAULT 0;
+
+-- ============================================
+-- Trigger to update profile rating stats
+-- ============================================
+CREATE OR REPLACE FUNCTION update_profile_rating_stats()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Update the rated user's stats
+  UPDATE profiles 
+  SET 
+    total_ratings = (
+      SELECT COUNT(*) FROM ratings WHERE rated_id = NEW.rated_id
+    ),
+    average_rating = (
+      SELECT COALESCE(AVG(rating)::DECIMAL(3,2), 0) FROM ratings WHERE rated_id = NEW.rated_id
+    )
+  WHERE id = NEW.rated_id;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_rating_created ON ratings;
+CREATE TRIGGER on_rating_created
+  AFTER INSERT ON ratings
+  FOR EACH ROW EXECUTE FUNCTION update_profile_rating_stats();
+
+-- ============================================
+-- VIEW: Ratings with user info
+-- ============================================
+CREATE OR REPLACE VIEW ratings_with_users AS
+SELECT 
+  r.id,
+  r.job_id,
+  r.rating,
+  r.review,
+  r.rating_type,
+  r.created_at,
+  r.rater_id,
+  r.rated_id,
+  j.title AS job_title,
+  rater.full_name AS rater_name,
+  rater.avatar_url AS rater_avatar,
+  rated.full_name AS rated_name,
+  rated.avatar_url AS rated_avatar
+FROM ratings r
+LEFT JOIN jobs j ON r.job_id = j.id
+LEFT JOIN profiles rater ON r.rater_id = rater.id
+LEFT JOIN profiles rated ON r.rated_id = rated.id;

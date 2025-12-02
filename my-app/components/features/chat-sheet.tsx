@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Send, 
@@ -11,7 +11,10 @@ import {
   ArrowLeft,
   User,
   Users,
-  ChevronRight
+  ChevronRight,
+  UserCheck,
+  CheckCircle2,
+  CircleDot
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,12 +26,15 @@ import {
 } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { createClient } from "@/utils/supabase/client";
+import { assignWorker } from "@/app/actions/update-job-status";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
 // Create a single instance outside the component to prevent re-creation
 const supabase = createClient();
 
 // Types
+type JobStatus = "open" | "in_progress" | "completed" | "cancelled";
+
 interface Job {
   id: string;
   title: string;
@@ -39,6 +45,8 @@ interface Job {
   userId: string;
   studentName: string;
   avatarUrl: string;
+  status?: JobStatus;
+  assignedTo?: string | null;
 }
 
 interface Message {
@@ -103,6 +111,13 @@ export function ChatSheet({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  
+  // Assignment state
+  const [currentViewingWorkerId, setCurrentViewingWorkerId] = useState<string | null>(null);
+  const [currentViewingWorkerName, setCurrentViewingWorkerName] = useState<string | null>(null);
+  const [jobStatus, setJobStatus] = useState<JobStatus>(job?.status || "open");
+  const [assignedWorkerId, setAssignedWorkerId] = useState<string | null>(job?.assignedTo || null);
+  const [isPending, startTransition] = useTransition();
 
   const isOwner = currentUserId === job?.userId;
 
@@ -129,8 +144,32 @@ export function ChatSheet({
       setNewMessage("");
       setOtherUserEmail(null);
       setApplicants([]);
+      setCurrentViewingWorkerId(null);
+      setCurrentViewingWorkerName(null);
+      setJobStatus("open");
+      setAssignedWorkerId(null);
     }
   }, [isOpen, job?.id]);
+
+  // Fetch fresh job status from database when sheet opens
+  useEffect(() => {
+    if (!isOpen || !job) return;
+
+    const fetchJobStatus = async () => {
+      const { data, error } = await supabase
+        .from("jobs")
+        .select("status, assigned_to")
+        .eq("id", job.id)
+        .maybeSingle();
+
+      if (!error && data) {
+        setJobStatus((data.status as JobStatus) || "open");
+        setAssignedWorkerId(data.assigned_to || null);
+      }
+    };
+
+    fetchJobStatus();
+  }, [isOpen, job?.id, job]);
 
   // Fetch applicants for job owner
   useEffect(() => {
@@ -373,6 +412,29 @@ export function ChatSheet({
     }
   };
 
+  // Assign worker to job
+  const handleAssignWorker = async () => {
+    if (!job || !currentViewingWorkerId) return;
+
+    startTransition(async () => {
+      const result = await assignWorker(job.id, currentViewingWorkerId);
+      if (result.success) {
+        // Update local state immediately
+        setJobStatus("in_progress");
+        setAssignedWorkerId(currentViewingWorkerId);
+      } else {
+        console.error("Failed to assign worker:", result.error);
+      }
+    });
+  };
+
+  // Compute whether to show assign button - use derived state for reliability
+  const canAssign = isOwner && 
+    jobStatus === "open" && 
+    currentViewingWorkerId && 
+    !assignedWorkerId &&
+    activeConversationId;
+
   if (!job) return null;
 
   return (
@@ -403,25 +465,67 @@ export function ChatSheet({
               <div className="flex items-center gap-2">
                 <SheetTitle className="text-lg font-semibold text-zinc-900 dark:text-white truncate tracking-tight">
                   {activeConversationId 
-                    ? `${isOwner ? extractRegNumber(otherUserEmail) : job.studentName}` 
+                    ? `${isOwner ? (currentViewingWorkerName || extractRegNumber(otherUserEmail)) : job.studentName}` 
                     : job.title}
                 </SheetTitle>
-                {activeConversationId && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                    </span>
-                    <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Online</span>
-                  </div>
+                {activeConversationId && jobStatus !== "open" && assignedWorkerId && assignedWorkerId === currentViewingWorkerId && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold border border-emerald-200 dark:border-emerald-500/30">
+                    <UserCheck className="h-2.5 w-2.5" />
+                    Assigned
+                  </span>
                 )}
               </div>
-              {!activeConversationId && (
+              {!activeConversationId ? (
                 <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
                   Posted by {job.studentName}
                 </p>
+              ) : (
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className={`inline-flex items-center gap-1 text-xs font-medium ${
+                    jobStatus === "open" 
+                      ? "text-emerald-600 dark:text-emerald-400" 
+                      : jobStatus === "in_progress"
+                        ? "text-blue-600 dark:text-blue-400"
+                        : "text-zinc-500"
+                  }`}>
+                    {jobStatus === "open" && <CircleDot className="h-3 w-3" />}
+                    {jobStatus === "in_progress" && <Loader2 className="h-3 w-3 animate-spin" />}
+                    {jobStatus === "completed" && <CheckCircle2 className="h-3 w-3" />}
+                    {jobStatus === "open" ? "Open" : jobStatus === "in_progress" ? "In Progress" : jobStatus === "completed" ? "Completed" : "Cancelled"}
+                  </span>
+                  <span className="text-zinc-300 dark:text-zinc-600">•</span>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400">{job.title}</span>
+                </div>
               )}
             </div>
+            
+            {/* Assign Worker Button - Only for owner in open jobs viewing an unassigned applicant */}
+            <AnimatePresence mode="wait">
+              {canAssign ? (
+                <motion.div
+                  key="assign-btn"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                >
+                  <Button
+                    size="sm"
+                    onClick={handleAssignWorker}
+                    disabled={isPending}
+                    className="rounded-full h-8 px-3 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold shadow-lg shadow-emerald-500/25"
+                  >
+                    {isPending ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <>
+                        <UserCheck className="h-3 w-3 mr-1" />
+                        Assign
+                      </>
+                    )}
+                  </Button>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
           </div>
         </SheetHeader>
 
@@ -604,40 +708,57 @@ export function ChatSheet({
                             
                             {/* Applicant Cards */}
                             <div className="space-y-2">
-                              {applicants.map((applicant, index) => (
-                                <motion.button
-                                  key={applicant.conversationId}
-                                  initial={{ opacity: 0, x: -10 }}
-                                  animate={{ opacity: 1, x: 0 }}
-                                  transition={{ delay: 0.1 * index }}
-                                  whileHover={{ x: 4 }}
-                                  whileTap={{ scale: 0.98 }}
-                                  onClick={() => {
-                                    setActiveConversationId(applicant.conversationId);
-                                    setOtherUserEmail(applicant.workerEmail);
-                                  }}
-                                  className="w-full flex items-center gap-3.5 p-3.5 rounded-2xl bg-zinc-100/80 dark:bg-zinc-800/50 hover:bg-zinc-200/80 dark:hover:bg-zinc-800 transition-colors text-left group"
-                                >
-                                  <Avatar className="h-11 w-11 rounded-xl ring-2 ring-white dark:ring-zinc-700 shadow-md">
-                                    <AvatarImage 
-                                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${applicant.workerId}`} 
-                                      className="rounded-xl"
-                                    />
-                                    <AvatarFallback className="rounded-xl bg-gradient-to-br from-violet-400 to-purple-500 text-white font-bold text-sm">
-                                      {extractRegNumber(applicant.workerEmail).slice(0, 2)}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-semibold text-zinc-900 dark:text-white">
-                                      {extractRegNumber(applicant.workerEmail)}
-                                    </p>
-                                    <p className="text-sm text-zinc-500 dark:text-zinc-400 truncate">
-                                      {applicant.lastMessage || "Tap to start chatting"}
-                                    </p>
-                                  </div>
-                                  <ChevronRight className="h-5 w-5 text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-400 dark:group-hover:text-zinc-500 transition-colors" />
-                                </motion.button>
-                              ))}
+                              {applicants.map((applicant, index) => {
+                                const isAssigned = assignedWorkerId === applicant.workerId;
+                                return (
+                                  <motion.button
+                                    key={applicant.conversationId}
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.1 * index }}
+                                    whileHover={{ x: 4 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => {
+                                      setActiveConversationId(applicant.conversationId);
+                                      setOtherUserEmail(applicant.workerEmail);
+                                      setCurrentViewingWorkerId(applicant.workerId);
+                                      setCurrentViewingWorkerName(getDisplayName(applicant.workerName, applicant.workerEmail));
+                                    }}
+                                    className={`w-full flex items-center gap-3.5 p-3.5 rounded-2xl transition-colors text-left group ${
+                                      isAssigned 
+                                        ? "bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/20"
+                                        : "bg-zinc-100/80 dark:bg-zinc-800/50 hover:bg-zinc-200/80 dark:hover:bg-zinc-800"
+                                    }`}
+                                  >
+                                    <Avatar className="h-11 w-11 rounded-xl ring-2 ring-white dark:ring-zinc-700 shadow-md">
+                                      <AvatarImage 
+                                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${applicant.workerId}`} 
+                                        className="rounded-xl"
+                                      />
+                                      <AvatarFallback className="rounded-xl bg-gradient-to-br from-violet-400 to-purple-500 text-white font-bold text-sm">
+                                        {extractRegNumber(applicant.workerEmail).slice(0, 2)}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <p className="font-semibold text-zinc-900 dark:text-white">
+                                          {getDisplayName(applicant.workerName, applicant.workerEmail)}
+                                        </p>
+                                        {isAssigned && (
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-bold">
+                                            <UserCheck className="h-2.5 w-2.5" />
+                                            Assigned
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className="text-sm text-zinc-500 dark:text-zinc-400 truncate">
+                                        {applicant.lastMessage || "Tap to start chatting"}
+                                      </p>
+                                    </div>
+                                    <ChevronRight className="h-5 w-5 text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-400 dark:group-hover:text-zinc-500 transition-colors" />
+                                  </motion.button>
+                                );
+                              })}
                             </div>
                           </>
                         )}
@@ -721,6 +842,64 @@ export function ChatSheet({
                           messages[index - 1].senderId !== message.senderId;
                         const isLastInGroup = index === messages.length - 1 ||
                           messages[index + 1]?.senderId !== message.senderId;
+                        
+                        // Detect system notification messages
+                        const isSystemMessage = 
+                          message.content.startsWith("You've been selected for") ||
+                          message.content.startsWith("Task completed.") ||
+                          message.content.startsWith("This task has been cancelled.");
+                        
+                        // Render system messages as centered cards
+                        if (isSystemMessage) {
+                          return (
+                            <motion.div
+                              key={message.id}
+                              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              transition={{ duration: 0.3, ease: "easeOut" }}
+                              className="flex justify-center my-4"
+                            >
+                              <div className="relative max-w-[85%]">
+                                {/* Subtle glow effect */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-blue-500/10 to-violet-500/10 rounded-2xl blur-xl" />
+                                
+                                {/* Card */}
+                                <div className="relative px-5 py-4 rounded-2xl bg-white/80 dark:bg-zinc-800/80 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-xl">
+                                  <div className="flex items-start gap-3">
+                                    {/* Icon */}
+                                    <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                                      message.content.startsWith("You've been selected") 
+                                        ? "bg-emerald-100 dark:bg-emerald-500/20" 
+                                        : message.content.startsWith("Task completed")
+                                          ? "bg-blue-100 dark:bg-blue-500/20"
+                                          : "bg-zinc-100 dark:bg-zinc-700"
+                                    }`}>
+                                      {message.content.startsWith("You've been selected") && (
+                                        <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                      )}
+                                      {message.content.startsWith("Task completed") && (
+                                        <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                      )}
+                                      {message.content.startsWith("This task has been cancelled") && (
+                                        <CircleDot className="h-4 w-4 text-zinc-500" />
+                                      )}
+                                    </div>
+                                    
+                                    {/* Content */}
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-[13px] font-medium text-zinc-900 dark:text-white leading-snug">
+                                        {message.content}
+                                      </p>
+                                      <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1">
+                                        {formatMessageTime(message.createdAt)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        }
                         
                         return (
                           <motion.div

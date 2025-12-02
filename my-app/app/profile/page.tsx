@@ -12,10 +12,10 @@ export default async function ProfilePage() {
     redirect("/login");
   }
 
-  // Fetch user profile
+  // Fetch user profile with rating stats
   const { data: profile } = await supabase
     .from("profiles")
-    .select("*")
+    .select("*, average_rating, total_ratings, tasks_completed")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -31,6 +31,53 @@ export default async function ProfilePage() {
     .select("*", { count: "exact", head: true })
     .eq("worker_id", user.id);
 
+  // Fetch ratings received by this user
+  const { data: ratings } = await supabase
+    .from("ratings")
+    .select(`
+      id,
+      rating,
+      review,
+      rating_type,
+      created_at,
+      job_id,
+      rater_id
+    `)
+    .eq("rated_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  // Fetch rater profiles separately
+  const raterIds = [...new Set((ratings || []).map(r => r.rater_id))];
+  const { data: raterProfiles } = raterIds.length > 0 
+    ? await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url, email")
+        .in("id", raterIds)
+    : { data: [] };
+
+  // Fetch job titles
+  const jobIds = [...new Set((ratings || []).map(r => r.job_id))];
+  const { data: jobs } = jobIds.length > 0
+    ? await supabase
+        .from("jobs")
+        .select("id, title")
+        .in("id", jobIds)
+    : { data: [] };
+
+  // Combine data
+  const ratingsWithDetails = (ratings || []).map(r => {
+    const rater = raterProfiles?.find(p => p.id === r.rater_id);
+    const job = jobs?.find(j => j.id === r.job_id);
+    return {
+      ...r,
+      raterName: rater?.full_name || null,
+      raterEmail: rater?.email || null,
+      raterAvatar: rater?.avatar_url || null,
+      jobTitle: job?.title || "Unknown Task",
+    };
+  });
+
   return (
     <ProfileClient
       email={user.email || ""}
@@ -39,6 +86,9 @@ export default async function ProfilePage() {
       tasksPosted={tasksPosted || 0}
       tasksApplied={tasksApplied || 0}
       createdAt={profile?.created_at || user.created_at}
+      averageRating={profile?.average_rating || 0}
+      totalRatings={profile?.total_ratings || 0}
+      ratings={ratingsWithDetails}
     />
   );
 }

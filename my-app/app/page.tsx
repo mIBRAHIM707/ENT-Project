@@ -49,6 +49,7 @@ interface JobRow {
   location: string;
   category?: string | null;
   status?: JobStatus | null;
+  assigned_to?: string | null;
   user_id: string | null;
   created_at?: string;
   student_name?: string | null;
@@ -79,6 +80,7 @@ export default async function Home() {
     location: job.location || "Campus",
     category: job.category || "",
     status: job.status || "open",
+    assignedTo: job.assigned_to || null,
     userId: job.user_id || "",
     // Use display name if set, otherwise fall back to roll number from email
     studentName: job.student_name || extractRegNumber(job.student_email),

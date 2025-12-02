@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogOut, Briefcase, UserCircle, Loader2 } from "lucide-react";
+import { LogOut, Briefcase, UserCircle, Loader2, ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -201,7 +201,16 @@ export function UserMenu() {
         >
           <Link href="/my-jobs" className="flex items-center">
             <Briefcase className="mr-2 h-4 w-4 text-zinc-500" />
-            <span>My Posted Jobs</span>
+            <span>My Posted Tasks</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem 
+          className="cursor-pointer rounded-lg mx-1 focus:bg-zinc-100 dark:focus:bg-zinc-800"
+          asChild
+        >
+          <Link href="/my-gigs" className="flex items-center">
+            <ClipboardCheck className="mr-2 h-4 w-4 text-zinc-500" />
+            <span>My Gigs</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator className="bg-zinc-200 dark:bg-zinc-800" />
