@@ -29,6 +29,8 @@ import {
 const supabase = createClient();
 
 // Job type from database
+type JobStatus = "open" | "in_progress" | "completed" | "cancelled";
+
 interface Job {
   id: string;
   title: string;
@@ -37,6 +39,7 @@ interface Job {
   urgency: string;
   location: string;
   category?: string;
+  status?: JobStatus;
   userId: string;
   studentName: string;
   avatarUrl: string;
@@ -466,6 +469,8 @@ export function HomeClient({ jobs }: HomeClientProps) {
                       studentName={job.studentName}
                       timeAgo={job.timeAgo}
                       createdAt={job.createdAt}
+                      status={job.status}
+                      category={job.category}
                       onClick={() => handleJobClick(job)}
                     />
                   </motion.div>

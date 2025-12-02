@@ -11,7 +11,12 @@ import {
   Users,
   AlertTriangle,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  CheckCircle2,
+  XCircle,
+  CircleDot,
+  UserCheck,
+  Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,14 +32,46 @@ import {
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { createClient } from "@/utils/supabase/client";
 import { deleteJob } from "@/app/actions/delete-job";
+import { updateJobStatus } from "@/app/actions/update-job-status";
 import { SmartPricingForm } from "@/components/features/smart-pricing-form";
 import { ChatSheet } from "@/components/features/chat-sheet";
+import { RatingDialog } from "@/components/features/rating-dialog";
 import { UserMenu } from "@/components/auth/user-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
 import Link from "next/link";
 
 // Create a single instance outside the component to prevent re-creation
 const supabase = createClient();
+
+type JobStatus = "open" | "in_progress" | "completed" | "cancelled";
+
+// Status configuration with premium styling
+const STATUS_CONFIG: Record<JobStatus, {
+  label: string;
+  className: string;
+  dotColor: string;
+}> = {
+  open: {
+    label: "Open",
+    className: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30",
+    dotColor: "bg-emerald-500",
+  },
+  in_progress: {
+    label: "In Progress",
+    className: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/30",
+    dotColor: "bg-blue-500",
+  },
+  completed: {
+    label: "Completed",
+    className: "bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700",
+    dotColor: "bg-zinc-400",
+  },
+  cancelled: {
+    label: "Cancelled",
+    className: "bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/30",
+    dotColor: "bg-red-500",
+  },
+};
 
 interface Job {
   id: string;
@@ -43,7 +80,10 @@ interface Job {
   price: number;
   urgency: string;
   location: string;
+  status: JobStatus;
   user_id: string;
+  assigned_to: string | null;
+  assigned_name: string | null;
   created_at: string;
   applicant_count: number;
 }
@@ -74,11 +114,22 @@ export default function MyJobsPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [chatSheetOpen, setChatSheetOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  
+  // Status management
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [statusAction, setStatusAction] = useState<"complete" | "cancel" | null>(null);
+  const [jobToUpdate, setJobToUpdate] = useState<Job | null>(null);
+  const [activeTab, setActiveTab] = useState<"active" | "completed">("active");
+  
+  // Rating dialog
+  const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
+  const [jobToRate, setJobToRate] = useState<Job | null>(null);
 
   // Extract fetch logic into a reusable function
   const fetchJobs = useCallback(async (userId: string) => {
+    // Use the view to get assigned user info
     const { data: jobsData, error } = await supabase
-      .from("jobs")
+      .from("jobs_with_poster")
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
@@ -97,14 +148,24 @@ export default function MyJobsPage() {
           .eq("job_id", job.id);
 
         return {
-          ...job,
+          id: job.id,
+          title: job.title,
+          description: job.description || "",
+          price: job.price,
+          urgency: job.urgency,
+          location: job.location,
+          status: (job.status as JobStatus) || "open",
+          user_id: job.user_id,
+          assigned_to: job.assigned_to,
+          assigned_name: job.assigned_name,
+          created_at: job.created_at,
           applicant_count: count || 0,
         };
       })
     );
 
     setJobs(jobsWithCounts);
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
     async function fetchData() {
@@ -149,7 +210,35 @@ export default function MyJobsPage() {
         setJobToDelete(null);
       } else {
         console.error("Failed to delete job:", result.error);
-        // Could show a toast here
+      }
+    });
+  };
+
+  // Status update handlers
+  const handleStatusAction = (job: Job, action: "complete" | "cancel") => {
+    setJobToUpdate(job);
+    setStatusAction(action);
+    setStatusDialogOpen(true);
+  };
+
+  const handleConfirmStatusUpdate = () => {
+    if (!jobToUpdate || !statusAction) return;
+
+    const newStatus = statusAction === "complete" ? "completed" : "cancelled";
+
+    startTransition(async () => {
+      const result = await updateJobStatus(jobToUpdate.id, newStatus);
+      if (result.success) {
+        setJobs((prev) => 
+          prev.map((j) => 
+            j.id === jobToUpdate.id ? { ...j, status: newStatus } : j
+          )
+        );
+        setStatusDialogOpen(false);
+        setJobToUpdate(null);
+        setStatusAction(null);
+      } else {
+        console.error("Failed to update status:", result.error);
       }
     });
   };
@@ -157,6 +246,11 @@ export default function MyJobsPage() {
   const handleViewChat = (job: Job) => {
     setSelectedJob(job);
     setChatSheetOpen(true);
+  };
+
+  const handleRateHelper = (job: Job) => {
+    setJobToRate(job);
+    setRatingDialogOpen(true);
   };
 
   const extractRegNumber = (email: string | null): string => {
@@ -196,6 +290,23 @@ export default function MyJobsPage() {
           onClose={() => setChatSheetOpen(false)}
           currentUserId={currentUserId}
           currentUserEmail={currentUserEmail}
+        />
+      )}
+
+      {/* Rating Dialog */}
+      {jobToRate && jobToRate.assigned_to && (
+        <RatingDialog
+          isOpen={ratingDialogOpen}
+          onClose={() => {
+            setRatingDialogOpen(false);
+            setJobToRate(null);
+          }}
+          jobId={jobToRate.id}
+          jobTitle={jobToRate.title}
+          ratedUserId={jobToRate.assigned_to}
+          ratedUserName={jobToRate.assigned_name || "Helper"}
+          ratedUserAvatar={`https://api.dicebear.com/7.x/avataaars/svg?seed=${jobToRate.assigned_to}`}
+          ratingType="poster_to_helper"
         />
       )}
 
@@ -330,83 +441,192 @@ export default function MyJobsPage() {
               </Dialog>
             </motion.div>
 
-            {/* Task Count */}
-            <div className="flex items-center justify-between px-1">
-              <p className="text-[13px] text-zinc-500 dark:text-zinc-400">
-                {jobs.length} active task{jobs.length !== 1 ? "s" : ""}
-              </p>
+            {/* Premium Tab Bar */}
+            <div className="flex items-center gap-1 p-1 bg-zinc-100 dark:bg-zinc-800/50 rounded-xl w-fit">
+              <button
+                onClick={() => setActiveTab("active")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === "active"
+                    ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm"
+                    : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                }`}
+              >
+                Active ({jobs.filter(j => j.status === "open" || j.status === "in_progress").length})
+              </button>
+              <button
+                onClick={() => setActiveTab("completed")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === "completed"
+                    ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm"
+                    : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                }`}
+              >
+                Completed ({jobs.filter(j => j.status === "completed" || j.status === "cancelled").length})
+              </button>
             </div>
 
             <AnimatePresence mode="popLayout">
-              {jobs.map((job, index) => (
-                <motion.div
-                  key={job.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: -100 }}
-                  transition={{ delay: index * 0.05, type: "spring", stiffness: 400, damping: 30 }}
-                  layout
-                  className="group bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 p-5 hover:shadow-lg hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-200"
-                >
-                  <div className="flex items-center gap-5">
-                    {/* Left: Title + Time */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-[16px] text-zinc-900 dark:text-white truncate mb-1">
-                        {job.title}
-                      </h3>
-                      <div className="flex items-center gap-3 text-[13px] text-zinc-500 dark:text-zinc-400">
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3.5 w-3.5" />
-                          {formatTimeAgo(job.created_at)}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Users className="h-3.5 w-3.5" />
-                          {job.applicant_count} applicant{job.applicant_count !== 1 ? "s" : ""}
-                        </span>
+              {jobs
+                .filter(job => 
+                  activeTab === "active" 
+                    ? job.status === "open" || job.status === "in_progress"
+                    : job.status === "completed" || job.status === "cancelled"
+                )
+                .map((job, index) => {
+                  const statusConfig = STATUS_CONFIG[job.status];
+                  const isActive = job.status === "open" || job.status === "in_progress";
+                  
+                  return (
+                    <motion.div
+                      key={job.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, x: -100 }}
+                      transition={{ delay: index * 0.05, type: "spring", stiffness: 400, damping: 30 }}
+                      layout
+                      className={`group bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 p-5 hover:shadow-lg hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-200 ${!isActive ? "opacity-75" : ""}`}
+                    >
+                      {/* Main Row */}
+                      <div className="flex items-start gap-5">
+                        {/* Left: Title + Meta */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-[16px] text-zinc-900 dark:text-white truncate">
+                              {job.title}
+                            </h3>
+                            {/* Status Badge - Premium pill */}
+                            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${statusConfig.className}`}>
+                              {job.status === "in_progress" ? (
+                                <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                              ) : (
+                                <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dotColor}`} />
+                              )}
+                              {statusConfig.label}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-3 text-[13px] text-zinc-500 dark:text-zinc-400">
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3.5 w-3.5" />
+                              {formatTimeAgo(job.created_at)}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Users className="h-3.5 w-3.5" />
+                              {job.applicant_count} applicant{job.applicant_count !== 1 ? "s" : ""}
+                            </span>
+                            {job.assigned_name && (
+                              <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                                <UserCheck className="h-3.5 w-3.5" />
+                                {job.assigned_name}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Right: Price */}
+                        <Badge 
+                          variant="secondary" 
+                          className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 font-semibold px-3 py-1 shrink-0"
+                        >
+                          Rs. {job.price}
+                        </Badge>
                       </div>
-                    </div>
 
-                    {/* Middle: Price + Status */}
-                    <div className="flex items-center gap-3">
-                      <Badge 
-                        variant="secondary" 
-                        className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 font-semibold px-3 py-1"
-                      >
-                        Rs. {job.price}
-                      </Badge>
-                      <Badge 
-                        variant="outline" 
-                        className="border-blue-200 text-blue-600 dark:border-blue-500/30 dark:text-blue-400"
-                      >
-                        Open
-                      </Badge>
-                    </div>
+                      {/* Action Row */}
+                      <div className="flex items-center justify-between mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                        <div className="flex items-center gap-2">
+                          {/* View Chats */}
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => handleViewChat(job)}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 font-medium text-[13px] transition-colors"
+                          >
+                            <MessageCircle className="h-3.5 w-3.5" />
+                            Chats
+                          </motion.button>
+                          
+                          {/* Rate (only for completed) */}
+                          {job.status === "completed" && job.assigned_to && (
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => handleRateHelper(job)}
+                              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 font-medium text-[13px] transition-colors"
+                            >
+                              <Star className="h-3.5 w-3.5" />
+                              Rate Helper
+                            </motion.button>
+                          )}
+                        </div>
 
-                    {/* Right: Actions */}
-                    <div className="flex items-center gap-2">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handleViewChat(job)}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 font-medium text-[14px] transition-colors"
-                      >
-                        <MessageCircle className="h-4 w-4" />
-                        <span className="hidden sm:inline">View Chats</span>
-                      </motion.button>
-
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handleDeleteClick(job)}
-                        className="flex items-center justify-center w-10 h-10 rounded-xl bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </motion.button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
+                        {/* Status Actions */}
+                        {isActive && (
+                          <div className="flex items-center gap-2">
+                            {/* Mark Complete */}
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => handleStatusAction(job, "complete")}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-medium text-[13px] transition-colors"
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              Complete
+                            </motion.button>
+                            
+                            {/* Cancel */}
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => handleStatusAction(job, "cancel")}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400 font-medium text-[13px] transition-colors"
+                            >
+                              <XCircle className="h-3.5 w-3.5" />
+                              Cancel
+                            </motion.button>
+                            
+                            {/* Delete */}
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => handleDeleteClick(job)}
+                              className="flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 transition-colors"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </motion.button>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
             </AnimatePresence>
+
+            {/* Empty state for tab */}
+            {jobs.filter(job => 
+              activeTab === "active" 
+                ? job.status === "open" || job.status === "in_progress"
+                : job.status === "completed" || job.status === "cancelled"
+            ).length === 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center py-16"
+              >
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+                  {activeTab === "active" ? (
+                    <ClipboardList className="h-7 w-7 text-zinc-400" />
+                  ) : (
+                    <CheckCircle2 className="h-7 w-7 text-zinc-400" />
+                  )}
+                </div>
+                <p className="text-zinc-500 dark:text-zinc-400 font-medium">
+                  {activeTab === "active" 
+                    ? "No active tasks" 
+                    : "No completed tasks yet"}
+                </p>
+              </motion.div>
+            )}
           </div>
         )}
       </main>
@@ -447,6 +667,64 @@ export default function MyJobsPage() {
                 </>
               ) : (
                 "Delete Task"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Status Update Confirmation Dialog */}
+      <Dialog open={statusDialogOpen} onOpenChange={setStatusDialogOpen}>
+        <DialogContent className="sm:max-w-[400px] rounded-3xl border border-zinc-200 dark:border-zinc-800">
+          <DialogHeader className="text-center">
+            <div className={`mx-auto mb-4 w-14 h-14 rounded-full flex items-center justify-center ${
+              statusAction === "complete" 
+                ? "bg-emerald-100 dark:bg-emerald-500/20" 
+                : "bg-zinc-100 dark:bg-zinc-800"
+            }`}>
+              {statusAction === "complete" ? (
+                <CheckCircle2 className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+              ) : (
+                <XCircle className="h-7 w-7 text-zinc-600 dark:text-zinc-400" />
+              )}
+            </div>
+            <DialogTitle className="text-xl font-bold text-zinc-900 dark:text-white text-center">
+              {statusAction === "complete" ? "Mark as Completed?" : "Cancel this task?"}
+            </DialogTitle>
+            <DialogDescription className="text-zinc-500 dark:text-zinc-400 mt-2">
+              {statusAction === "complete" 
+                ? <>This will mark <span className="font-medium text-zinc-700 dark:text-zinc-300">&quot;{jobToUpdate?.title}&quot;</span> as completed. You can rate the helper after this.</>
+                : <>This will cancel <span className="font-medium text-zinc-700 dark:text-zinc-300">&quot;{jobToUpdate?.title}&quot;</span>. It will be moved to your completed tasks.</>
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-3 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setStatusDialogOpen(false)}
+              className="flex-1 rounded-xl h-11"
+              disabled={isPending}
+            >
+              Go Back
+            </Button>
+            <Button
+              onClick={handleConfirmStatusUpdate}
+              disabled={isPending}
+              className={`flex-1 rounded-xl h-11 ${
+                statusAction === "complete"
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  : "bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900"
+              }`}
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Updating...
+                </>
+              ) : statusAction === "complete" ? (
+                "Mark Complete"
+              ) : (
+                "Cancel Task"
               )}
             </Button>
           </DialogFooter>

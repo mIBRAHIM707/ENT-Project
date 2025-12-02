@@ -38,6 +38,8 @@ function extractRegNumber(email: string | null): string {
 }
 
 // Database row type from jobs_with_poster view
+type JobStatus = "open" | "in_progress" | "completed" | "cancelled";
+
 interface JobRow {
   id: string;
   title: string;
@@ -46,6 +48,7 @@ interface JobRow {
   urgency: string;
   location: string;
   category?: string | null;
+  status?: JobStatus | null;
   user_id: string | null;
   created_at?: string;
   student_name?: string | null;
@@ -75,6 +78,7 @@ export default async function Home() {
     urgency: job.urgency || "Flexible",
     location: job.location || "Campus",
     category: job.category || "",
+    status: job.status || "open",
     userId: job.user_id || "",
     // Use display name if set, otherwise fall back to roll number from email
     studentName: job.student_name || extractRegNumber(job.student_email),

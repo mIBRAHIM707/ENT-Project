@@ -397,7 +397,7 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
                     </p>
                   </div>
                 ) : (
-                  <div className="px-3 pb-3">
+                  <div className="px-3 pb-3 space-y-2">
                     {notifications.map((notif, index) => (
                       <motion.button
                         key={notif.id}
@@ -407,8 +407,8 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
                         onClick={() => handleNotificationClick(notif)}
                         className={`w-full flex items-start gap-4 p-4 rounded-2xl text-left transition-all duration-200 group ${
                           !notif.read 
-                            ? "bg-emerald-50/80 dark:bg-emerald-500/10 hover:bg-emerald-100/80 dark:hover:bg-emerald-500/15" 
-                            : "hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                            ? "bg-emerald-50 dark:bg-emerald-500/15 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 border border-emerald-200/50 dark:border-emerald-500/20" 
+                            : "bg-zinc-50 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-100 dark:border-zinc-800"
                         }`}
                       >
                         {/* Avatar with online indicator style */}
