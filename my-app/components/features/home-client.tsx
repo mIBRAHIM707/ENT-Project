@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Search, Utensils, BookOpen, Laptop, Car, Sparkles } from "lucide-react";
 import { JobCard } from "@/components/features/job-card";
 import { SmartPricingForm } from "@/components/features/smart-pricing-form";
 import { ChatSheet } from "@/components/features/chat-sheet";
+import { NotificationsPopover } from "@/components/features/notifications-popover";
 import { UserMenu } from "@/components/auth/user-menu";
 import { Button } from "@/components/ui/button";
 import {
@@ -132,6 +133,46 @@ export function HomeClient({ jobs }: HomeClientProps) {
     setChatSheetOpen(true);
   };
 
+  // Handle opening chat from notification
+  const handleOpenChatFromNotification = useCallback(async (jobId: string, conversationId: string) => {
+    // Find the job in our list or fetch it
+    const job = jobs.find(j => j.id === jobId);
+    if (job) {
+      setSelectedJob({
+        ...job,
+        description: job.description || "",
+      });
+      setChatSheetOpen(true);
+    } else {
+      // Fetch job from database if not in current list
+      const { data: jobData } = await supabase
+        .from("jobs")
+        .select("*, profiles!jobs_user_id_fkey(email)")
+        .eq("id", jobId)
+        .single();
+      
+      if (jobData) {
+        const email = jobData.profiles?.email || "";
+        const regMatch = email.match(/[a-z]?(\d+)@/i);
+        const regNumber = regMatch ? regMatch[1] : "User";
+        
+        setSelectedJob({
+          id: jobData.id,
+          title: jobData.title,
+          description: jobData.description || "",
+          price: jobData.price,
+          urgency: jobData.urgency,
+          location: jobData.location,
+          userId: jobData.user_id,
+          studentName: regNumber,
+          avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${jobData.user_id}`,
+          timeAgo: "Just now",
+        });
+        setChatSheetOpen(true);
+      }
+    }
+  }, [jobs, supabase]);
+
   return (
     <div className="relative min-h-screen">
       {/* Chat Sheet */}
@@ -173,6 +214,10 @@ export function HomeClient({ jobs }: HomeClientProps) {
           </h1>
           <div className="flex items-center gap-3">
             <UserMenu />
+            <NotificationsPopover 
+              userId={currentUserId} 
+              onOpenChat={handleOpenChatFromNotification} 
+            />
             {mounted ? (
               <Dialog open={headerDialogOpen} onOpenChange={setHeaderDialogOpen}>
                 <DialogTrigger asChild>
