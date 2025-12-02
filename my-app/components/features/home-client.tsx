@@ -8,6 +8,7 @@ import { SmartPricingForm } from "@/components/features/smart-pricing-form";
 import { ChatSheet } from "@/components/features/chat-sheet";
 import { NotificationsPopover } from "@/components/features/notifications-popover";
 import { UserMenu } from "@/components/auth/user-menu";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -213,6 +214,7 @@ export function HomeClient({ jobs }: HomeClientProps) {
             CrowdServe
           </h1>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <UserMenu />
             <NotificationsPopover 
               userId={currentUserId} 
@@ -410,6 +412,7 @@ export function HomeClient({ jobs }: HomeClientProps) {
                   >
                     <JobCard
                       title={job.title}
+                      description={job.description}
                       price={job.price}
                       urgency={job.urgency}
                       distance={job.location}

@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface JobCardProps {
   title: string;
+  description?: string;
   price: number;
   urgency: string;
   distance: string;
@@ -17,6 +18,7 @@ interface JobCardProps {
 
 export function JobCard({
   title,
+  description,
   price,
   urgency,
   distance,
@@ -39,7 +41,7 @@ export function JobCard({
         </div>
 
         {/* Header */}
-        <div className="flex items-start gap-4 mb-4">
+        <div className="flex items-start gap-4 mb-3">
           <Avatar className="h-12 w-12 rounded-xl ring-2 ring-zinc-100 dark:ring-zinc-800">
             <AvatarImage src={avatarUrl} alt={studentName} />
             <AvatarFallback className="rounded-xl text-sm font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
@@ -56,10 +58,17 @@ export function JobCard({
           <ArrowUpRight className="h-4 w-4 text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-500 dark:group-hover:text-zinc-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
         </div>
 
-        {/* Title */}
-        <h3 className="font-semibold text-zinc-900 dark:text-white tracking-tight text-lg leading-snug mb-4">
+        {/* Title - with line clamp */}
+        <h3 className="font-semibold text-zinc-900 dark:text-white tracking-tight text-lg leading-snug mb-2 line-clamp-2">
           {title}
         </h3>
+
+        {/* Description Preview */}
+        {description && (
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-3 line-clamp-1">
+            {description}
+          </p>
+        )}
 
         {/* Footer Tags */}
         <div className="flex items-center gap-3">
@@ -76,52 +85,3 @@ export function JobCard({
     </motion.div>
   );
 }
-
-// Mock data for testing
-export const MOCK_JOBS: JobCardProps[] = [
-  {
-    title: "Need help moving furniture",
-    price: 2500,
-    urgency: "Today",
-    distance: "0.5 km",
-    avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=ali",
-    studentName: "Ali Hassan",
-    timeAgo: "2 hours ago",
-  },
-  {
-    title: "Looking for Math tutor",
-    price: 1500,
-    urgency: "This week",
-    distance: "1.2 km",
-    avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=sara",
-    studentName: "Sara Ahmed",
-    timeAgo: "5 hours ago",
-  },
-  {
-    title: "Laptop repair needed",
-    price: 3000,
-    urgency: "ASAP",
-    distance: "0.8 km",
-    avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=usman",
-    studentName: "Usman Khan",
-    timeAgo: "1 day ago",
-  },
-  {
-    title: "Design a poster for event",
-    price: 2000,
-    urgency: "3 days",
-    distance: "2.0 km",
-    avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=fatima",
-    studentName: "Fatima Malik",
-    timeAgo: "3 hours ago",
-  },
-  {
-    title: "Need a photographer for convocation",
-    price: 5000,
-    urgency: "Next week",
-    distance: "Campus",
-    avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=ahmed",
-    studentName: "Ahmed Raza",
-    timeAgo: "6 hours ago",
-  },
-];

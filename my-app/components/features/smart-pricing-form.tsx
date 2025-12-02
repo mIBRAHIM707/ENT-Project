@@ -2,11 +2,42 @@
 
 import { useState, useEffect, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Coffee, Zap, CheckCircle2, Sparkles } from "lucide-react";
+import { Loader2, Coffee, Zap, CheckCircle2, Sparkles, MapPin } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { createJob } from "@/app/actions/create-job";
+
+// Campus location options
+const CAMPUS_LOCATIONS = [
+  "Hostel 1",
+  "Hostel 2",
+  "Hostel 3",
+  "Hostel 4",
+  "Hostel 5",
+  "Hostel 6",
+  "Hostel 7",
+  "Hostel 8",
+  "Hostel 9",
+  "Hostel 10",
+  "Hostel 11",
+  "Hostel 12",
+  "New Girls Hostel",
+  "Library",
+  "Academic Block",
+  "Cafe",
+  "Admin Block",
+  "Sports Complex",
+  "Auditorium",
+  "Other",
+];
 
 interface SmartPricingFormProps {
   onSuccess?: () => void;
@@ -21,6 +52,7 @@ export function SmartPricingForm({ onSuccess }: SmartPricingFormProps) {
   const [isPending, startTransition] = useTransition();
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [location, setLocation] = useState("");
 
   // Map urgency slider value to text
   const getUrgencyText = (value: number) => {
@@ -79,14 +111,34 @@ export function SmartPricingForm({ onSuccess }: SmartPricingFormProps) {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="e.g., I need someone to pick up my parcel from the admin block..."
-          className="w-full min-h-[180px] text-lg font-normal border border-zinc-200 dark:border-zinc-700 rounded-xl p-4 resize-none focus-visible:ring-1 focus-visible:ring-emerald-500 bg-zinc-50 dark:bg-zinc-800/50 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 text-zinc-900 dark:text-zinc-100 leading-relaxed"
+          className="w-full min-h-[160px] text-lg font-normal border border-zinc-200 dark:border-zinc-700 rounded-xl p-4 resize-none focus-visible:ring-1 focus-visible:ring-emerald-500 bg-zinc-50 dark:bg-zinc-800/50 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 text-zinc-900 dark:text-zinc-100 leading-relaxed"
         />
-        {/* Character count */}
-        {description.length > 0 && (
-          <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2">
-            {description.length} characters
-          </p>
-        )}
+
+        {/* Location Selector */}
+        <div className="mt-4">
+          <label className="text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400 font-semibold mb-2 block">
+            Location
+          </label>
+          <Select value={location} onValueChange={setLocation}>
+            <SelectTrigger className="w-full h-12 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus:ring-1 focus:ring-emerald-500">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-zinc-400" />
+                <SelectValue placeholder="Where should helpers meet you?" />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900">
+              {CAMPUS_LOCATIONS.map((loc) => (
+                <SelectItem 
+                  key={loc} 
+                  value={loc}
+                  className="rounded-lg focus:bg-emerald-50 dark:focus:bg-emerald-500/10 cursor-pointer"
+                >
+                  {loc}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Bottom Section - Pinned */}
@@ -178,7 +230,7 @@ export function SmartPricingForm({ onSuccess }: SmartPricingFormProps) {
                       formData.append("description", description);
                       formData.append("price", calculatedPrice.toString());
                       formData.append("urgency", getUrgencyText(urgency[0]));
-                      formData.append("location", "Campus");
+                      formData.append("location", location || "Campus");
 
                       const result = await createJob(formData);
 
