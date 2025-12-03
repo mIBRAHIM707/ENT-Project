@@ -344,7 +344,7 @@ export default function MyJobsPage() {
               </motion.button>
             </Link>
             <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">
-              My Active Tasks
+              Posted Tasks
             </h1>
           </div>
           <div className="flex items-center gap-3">

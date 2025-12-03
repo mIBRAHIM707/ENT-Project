@@ -536,7 +536,7 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
                     </div>
                     <p className="text-[20px] font-semibold text-zinc-900 dark:text-white mb-2">No conversations yet</p>
                     <p className="text-[15px] text-zinc-500 dark:text-zinc-400 text-center max-w-[280px] leading-relaxed">
-                      When you apply to a gig or someone applies to yours, your conversations will appear here
+                      When you apply to a task or someone applies to yours, your conversations will appear here
                     </p>
                   </div>
                 ) : (
@@ -576,7 +576,7 @@ export function NotificationsPopover({ userId, onOpenChat }: NotificationsPopove
                                     ? "bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300"
                                     : "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300"
                                 }`}>
-                                  {thread.isJobOwner ? "Your gig" : "Applied"}
+                                  {thread.isJobOwner ? "Your task" : "Applied"}
                                 </span>
                               </div>
                               <span className="flex-shrink-0 text-[12px] text-zinc-400 dark:text-zinc-500 tabular-nums">

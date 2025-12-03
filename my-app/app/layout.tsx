@@ -2,12 +2,11 @@ import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { ThemeProvider } from "@/components/theme-provider";
-import { ThemeToggle } from "@/components/theme-toggle";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "CrowdServe",
-  description: "The marketplace for GIKI. Get campus life sorted.",
+  description: "The student marketplace for GIKI. Post tasks, find help, earn money.",
 };
 
 export default function RootLayout({
@@ -25,7 +24,6 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
-          <ThemeToggle />
         </ThemeProvider>
       </body>
     </html>

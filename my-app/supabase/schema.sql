@@ -1,5 +1,5 @@
 -- ============================================
--- CampusGig Database Schema for GIKI
+-- CrowdServe Database Schema for GIKI
 -- ============================================
 
 -- Enable UUID extension (if not already enabled)
@@ -122,7 +122,6 @@ CREATE INDEX IF NOT EXISTS jobs_created_at_idx ON jobs(created_at DESC);
 
 -- ============================================
 -- JOBS RLS (Row Level Security)
--- No more guest mode - authentication required for posting
 -- ============================================
 ALTER TABLE jobs ENABLE ROW LEVEL SECURITY;
 
@@ -132,7 +131,7 @@ CREATE POLICY "Jobs are viewable by everyone"
   FOR SELECT
   USING (true);
 
--- Policy: ONLY authenticated users can insert jobs (NO GUEST MODE)
+-- Policy: Only authenticated users can create jobs
 CREATE POLICY "Authenticated users can insert jobs"
   ON jobs
   FOR INSERT
@@ -182,8 +181,6 @@ SELECT
   p.full_name AS student_name,
   p.email AS student_email,
   p.avatar_url
-FROM jobs j
-LEFT JOIN profiles p ON j.user_id = p.id;
 FROM jobs j
 LEFT JOIN profiles p ON j.user_id = p.id;
 

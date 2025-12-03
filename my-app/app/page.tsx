@@ -60,10 +60,11 @@ interface JobRow {
 export default async function Home() {
   const supabase = await createClient();
 
-  // Fetch jobs with poster info from the view
+  // Fetch jobs with poster info from the view (only open and in_progress jobs)
   const { data: jobsData, error } = await supabase
     .from("jobs_with_poster")
     .select("*")
+    .in("status", ["open", "in_progress"])
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -87,7 +88,7 @@ export default async function Home() {
     avatarUrl: job.avatar_url || 
       (job.user_id 
         ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${job.user_id}`
-        : "https://api.dicebear.com/7.x/avataaars/svg?seed=Guest"),
+        : "https://api.dicebear.com/7.x/avataaars/svg?seed=anonymous"),
     timeAgo: job.created_at ? getTimeAgo(job.created_at) : "Recently",
     createdAt: job.created_at || null,
   }));

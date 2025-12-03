@@ -210,7 +210,7 @@ export function UserMenu() {
         >
           <Link href="/my-gigs" className="flex items-center">
             <ClipboardCheck className="mr-2 h-4 w-4 text-zinc-500" />
-            <span>My Gigs</span>
+            <span>Assigned to Me</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator className="bg-zinc-200 dark:bg-zinc-800" />

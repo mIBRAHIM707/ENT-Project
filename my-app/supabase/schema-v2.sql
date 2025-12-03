@@ -1,5 +1,5 @@
 -- ============================================
--- CampusGig Database Schema V2
+-- CrowdServe Database Schema V2
 -- New Features: Search, Task Lifecycle, Ratings
 -- ============================================
 

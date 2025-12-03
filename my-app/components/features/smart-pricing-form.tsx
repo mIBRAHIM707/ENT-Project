@@ -3,7 +3,7 @@
 import { useState, useEffect, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Loader2, Coffee, Zap, CheckCircle2, Sparkles, MapPin, Tag,
+  Loader2, CheckCircle2, Sparkles, MapPin, Tag,
   UtensilsCrossed, BookOpen, Monitor, Car, ShoppingBag, 
   GraduationCap, Shirt, Printer, Package, MoreHorizontal,
   type LucideIcon
@@ -265,7 +265,10 @@ export function SmartPricingForm({ onSuccess }: SmartPricingFormProps) {
                 {/* Urgency Slider */}
                 <div className="relative space-y-3">
                   <div className="flex justify-between items-center text-[10px] text-emerald-700/60 dark:text-zinc-500 uppercase tracking-widest font-semibold">
-                    <span>Urgency</span>
+                    <span>Timeline</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 normal-case font-medium">
+                      {getUrgencyText(urgency[0])}
+                    </span>
                   </div>
                   <div className="px-1">
                     <Slider
@@ -277,15 +280,9 @@ export function SmartPricingForm({ onSuccess }: SmartPricingFormProps) {
                       className="[&_[data-slot=slider-track]]:h-1.5 [&_[data-slot=slider-track]]:bg-emerald-200 dark:[&_[data-slot=slider-track]]:bg-zinc-800 [&_[data-slot=slider-range]]:bg-gradient-to-r [&_[data-slot=slider-range]]:from-emerald-500 [&_[data-slot=slider-range]]:to-teal-500 [&_[data-slot=slider-thumb]]:border-2 [&_[data-slot=slider-thumb]]:border-emerald-500 [&_[data-slot=slider-thumb]]:bg-white [&_[data-slot=slider-thumb]]:h-4 [&_[data-slot=slider-thumb]]:w-4 [&_[data-slot=slider-thumb]]:shadow-md"
                     />
                   </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="flex items-center gap-1.5 text-emerald-700/60 dark:text-zinc-500">
-                      <Coffee className="h-3.5 w-3.5" strokeWidth={1.5} />
-                      Chill
-                    </span>
-                    <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
-                      ASAP
-                      <Zap className="h-3.5 w-3.5" strokeWidth={1.5} fill="currentColor" />
-                    </span>
+                  <div className="flex justify-between items-center text-[11px] text-emerald-700/50 dark:text-zinc-600">
+                    <span>Flexible</span>
+                    <span>Urgent</span>
                   </div>
                 </div>
 

@@ -229,7 +229,7 @@ export default function MyGigsPage() {
       <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 rounded-full border-2 border-zinc-200 dark:border-zinc-700 border-t-emerald-500 animate-spin" />
-          <p className="text-zinc-500 text-sm">Loading your gigs...</p>
+          <p className="text-zinc-500 text-sm">Loading your tasks...</p>
         </div>
       </div>
     );
@@ -299,10 +299,10 @@ export default function MyGigsPage() {
             </Link>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">
-                My Gigs
+                Assigned to Me
               </h1>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Tasks assigned to you
+                Tasks you're working on
               </p>
             </div>
           </div>
@@ -331,10 +331,10 @@ export default function MyGigsPage() {
               </div>
             </div>
             <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-2">
-              No gigs yet
+              No assigned tasks yet
             </h2>
             <p className="text-zinc-500 dark:text-zinc-400 text-center max-w-sm mb-8">
-              When someone assigns a task to you, it will appear here. Browse the feed and apply to tasks!
+              When someone assigns a task to you, it will appear here. Browse the feed and start applying!
             </p>
             <Link href="/">
               <motion.button
@@ -566,8 +566,8 @@ export default function MyGigsPage() {
                 </div>
                 <p className="text-zinc-500 dark:text-zinc-400 font-medium">
                   {activeTab === "active" 
-                    ? "No active gigs" 
-                    : "No completed gigs yet"}
+                    ? "No active tasks" 
+                    : "No completed tasks yet"}
                 </p>
               </motion.div>
             )}
@@ -583,7 +583,7 @@ export default function MyGigsPage() {
               <CheckCircle2 className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
             </div>
             <DialogTitle className="text-xl font-bold text-zinc-900 dark:text-white text-center">
-              Complete this gig?
+              Mark as completed?
             </DialogTitle>
             <DialogDescription className="text-zinc-500 dark:text-zinc-400 mt-2">
               This will mark <span className="font-medium text-zinc-700 dark:text-zinc-300">&quot;{jobToComplete?.title}&quot;</span> as completed. The poster will be notified and you&apos;ll earn Rs. {jobToComplete?.price}.
@@ -609,7 +609,7 @@ export default function MyGigsPage() {
                   Completing...
                 </>
               ) : (
-                "Complete Gig"
+                "Complete Task"
               )}
             </Button>
           </DialogFooter>
