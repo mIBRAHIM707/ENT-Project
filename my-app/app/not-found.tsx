@@ -20,11 +20,6 @@ export default function NotFound() {
           <h1 className="text-[120px] sm:text-[160px] font-bold tracking-tighter text-zinc-200 dark:text-zinc-800 leading-none select-none">
             404
           </h1>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 dark:from-violet-900/50 dark:to-purple-900/50 flex items-center justify-center border border-violet-200/50 dark:border-violet-800/30 shadow-xl">
-              <Search className="w-8 h-8 text-violet-500" />
-            </div>
-          </div>
         </div>
 
         {/* Text */}
