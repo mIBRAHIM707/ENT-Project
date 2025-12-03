@@ -471,7 +471,7 @@ export function HomeClient({ jobs }: HomeClientProps) {
                       avatarUrl={job.avatarUrl}
                       studentName={job.studentName}
                       timeAgo={job.timeAgo}
-                      createdAt={job.createdAt}
+                      createdAt={job.createdAt ?? undefined}
                       status={job.status}
                       category={job.category}
                       onClick={() => handleJobClick(job)}

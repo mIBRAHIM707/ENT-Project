@@ -31,7 +31,7 @@ function getTimeAgo(timestamp: string): string {
 }
 
 // Extract registration number from GIKI email (e.g., u2023446@giki.edu.pk -> 2023446)
-function extractRegNumber(email: string | null): string {
+function extractRegNumber(email: string | null | undefined): string {
   if (!email) return "Student";
   const match = email.match(/[a-z]?(\d+)@/i);
   return match ? match[1] : "Student";
